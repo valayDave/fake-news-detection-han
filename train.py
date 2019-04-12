@@ -210,9 +210,6 @@ def generate_embedding_matrix(data_frame):
     np.random.shuffle(indices)
     data = data[indices]
     seperated_labels = seperated_labels.iloc[indices]
-    
-    #LSTM Regularizers --> Figure More
-    l2_reg = regularizers.l2(REG_PARAM)
 
     word_index = tokenizer.word_index
 
@@ -244,7 +241,7 @@ def generate_embedding_matrix(data_frame):
             absent_words += 1
     print('Total absent words are', absent_words, 'which is', "%0.2f" % (absent_words * 100 / len(word_index)), '% of total words')
 
-    return embedding_matrix,data,seperated_labels
+    return embedding_matrix,data,seperated_labels,word_index
 
 # data_frame : ['content_id','url','title','body','label']
 def train(data_frame,plot_name):
@@ -252,11 +249,15 @@ def train(data_frame,plot_name):
     data_frame = data_frame[['body', 'label']]
     shuffle(data_frame).reset_index()
     data_frame =data_frame[~data_frame['body'].isnull()]
-    log(data_frame.count())
-    embedding_matrix,prased_data,seperated_labels = generate_embedding_matrix(data_frame)
-    word_index = Tokenizer.word_index
-    embedding_layer = Embedding(len(word_index) + 1,embed_size,weights=[embedding_matrix], input_length=max_senten_len, trainable=False)
+    log(len(data_frame['label'].unique()))
 
+    num_labels = data_frame['label'].unique()
+    embedding_matrix,prased_data,seperated_labels,word_index = generate_embedding_matrix(data_frame)
+    embedding_layer = Embedding(len(word_index) + 1,embed_size,weights=[embedding_matrix], input_length=max_senten_len, trainable=False)
+    
+    #LSTM Regularizers --> Figure More
+    l2_reg = regularizers.l2(REG_PARAM)
+    
     word_input = Input(shape=(max_senten_len,), dtype='float32')
     word_sequences = embedding_layer(word_input)
     word_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=l2_reg))(word_sequences)
