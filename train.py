@@ -29,6 +29,7 @@ embed_size=100
 VALIDATION_SPLIT = 0.2
 learning_rate = 0.6
 REG_PARAM = 1e-13
+PLOT_FOLDER = 'plots/'
 
 GLOVE_DIR = "glove.6B.100d.txt"
 
@@ -210,7 +211,15 @@ def generate_embedding_matrix(data_frame):
     np.random.shuffle(indices)
     data = data[indices]
     seperated_labels = seperated_labels.iloc[indices]
+    nb_validation_samples = int(VALIDATION_SPLIT * data.shape[0])
 
+    x_train = data[:-nb_validation_samples]
+    y_train = seperated_labels[:-nb_validation_samples]
+    x_val = data[-nb_validation_samples:]
+    y_val = seperated_labels[-nb_validation_samples:]
+
+    train_vectors = (x_train,y_train)
+    validation_vectors = (x_val,y_val)
     word_index = tokenizer.word_index
 
     #Create the Embedding Matrix
@@ -241,7 +250,7 @@ def generate_embedding_matrix(data_frame):
             absent_words += 1
     print('Total absent words are', absent_words, 'which is', "%0.2f" % (absent_words * 100 / len(word_index)), '% of total words')
 
-    return embedding_matrix,data,seperated_labels,word_index
+    return embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors
 
 # data_frame : ['content_id','url','title','body','label']
 def train(data_frame,plot_name):
@@ -251,8 +260,8 @@ def train(data_frame,plot_name):
     data_frame =data_frame[~data_frame['body'].isnull()]
     log(len(data_frame['label'].unique()))
 
-    num_labels = data_frame['label'].unique()
-    embedding_matrix,prased_data,seperated_labels,word_index = generate_embedding_matrix(data_frame)
+    num_labels = len(data_frame['label'].unique())
+    embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors = generate_embedding_matrix(data_frame)
     embedding_layer = Embedding(len(word_index) + 1,embed_size,weights=[embedding_matrix], input_length=max_senten_len, trainable=False)
     
     #LSTM Regularizers --> Figure More
@@ -270,12 +279,12 @@ def train(data_frame,plot_name):
     sent_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=l2_reg))(sent_encoder)
     sent_dense = TimeDistributed(Dense(200, kernel_regularizer=l2_reg))(sent_lstm)
     sent_att = Dropout(0.5)(AttentionWithContext()(sent_dense))
-    preds = Dense(40, activation='softmax')(sent_att)
+    preds = Dense(num_labels, activation='softmax')(sent_att)
     model = Model(sent_input, preds)
     model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['acc'])
     log("Training Model ")
     checkpoint = ModelCheckpoint('best_model.h5', verbose=0, monitor='val_loss',save_best_only=True, mode='auto') 
-    history = model.fit(prased_data, seperated_labels, validation_split=0.2, epochs=50, batch_size=512, callbacks=[checkpoint])
+    history = model.fit(train_vectors[0], train_vectors[1], validation_data=(validation_vectors[0], validation_vectors[1]), epochs=50, batch_size=512, callbacks=[checkpoint])
     
     #Plot for Accurracy
     plt.plot(history.history['acc'])
@@ -285,7 +294,7 @@ def train(data_frame,plot_name):
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
     save_time=datetime.datetime.now().strftime('%b/%d/%Y-%H')
-    plt.savefig(plot_name+'-'+save_time+'-acc.png')
+    plt.savefig(PLOT_FOLDER+plot_name+'-'+save_time+'-acc.png')
 
     # summarize history for loss
     plt.plot(history.history['loss'])
@@ -294,7 +303,7 @@ def train(data_frame,plot_name):
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
-    plt.savefig(plot_name+'-'+save_time+'-val_loss.png')
+    plt.savefig(PLOT_FOLDER+plot_name+'-'+save_time+'-val_loss.png')
 
     log("Plots are Written ")
     
