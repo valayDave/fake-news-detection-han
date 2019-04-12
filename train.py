@@ -30,6 +30,7 @@ VALIDATION_SPLIT = 0.2
 learning_rate = 0.6
 REG_PARAM = 1e-13
 PLOT_FOLDER = 'plots/'
+MODEL_FOLDER = 'models/'
 
 GLOVE_DIR = "glove.6B.100d.txt"
 
@@ -306,5 +307,14 @@ def train(data_frame,plot_name):
     plt.savefig(PLOT_FOLDER+plot_name+'-'+save_time+'-val_loss.png')
 
     log("Plots are Written ")
+
+    # serialize model to JSON
+    model_json = model.to_json()
+    with open(MODEL_FOLDER+plot_name+".json", "w") as json_file:
+        json_file.write(model_json)
+    # serialize weights to HDF5
+    model.save_weights(MODEL_FOLDER+plot_name+".h5")
+    log("Saved model to disk")
+
     
 
