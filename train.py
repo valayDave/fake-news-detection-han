@@ -37,6 +37,7 @@ PLOT_FOLDER = os.path.join(my_path, 'plots/')
 MODEL_FOLDER = os.path.join(my_path, 'models/')
 sample_dataset = False
 NUM_SAMPLES = 5
+NUM_EPOCHS = 50
 
 GLOVE_DIR = "glove.6B.100d.txt"
 
@@ -380,7 +381,7 @@ def train_lstm(data_frame,plot_name):
     model.summary()
     checkpoint_model_path =os.path.join(MODEL_FOLDER,model_name+'-'+plot_name+'.h5')
     checkpoint = ModelCheckpoint(checkpoint_model_path, verbose=0, monitor='val_loss',save_best_only=True, mode='auto') 
-    history = model.fit(train_vectors[0], train_vectors[1], validation_data=(validation_vectors[0], validation_vectors[1]), epochs=5, batch_size=512, callbacks=[checkpoint])
+    history = model.fit(train_vectors[0], train_vectors[1], validation_data=(validation_vectors[0], validation_vectors[1]), epochs=NUM_EPOCHS, batch_size=512, callbacks=[checkpoint])
     #Plot for Accurracy
     plot_figure(history,'Model Accuracy',['train','test'],['acc','val_acc'],'accuracy','epoch','Bidirectional_LSTM',plot_name)
     # summarize history for loss
@@ -425,7 +426,7 @@ def train_han(data_frame,plot_name):
     model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['acc'])
     log("Training Model ")
     checkpoint = ModelCheckpoint('best_model.h5', verbose=0, monitor='val_loss',save_best_only=True, mode='auto') 
-    history = model.fit(train_vectors[0], train_vectors[1], validation_data=(validation_vectors[0], validation_vectors[1]), epochs=5, batch_size=512, callbacks=[checkpoint])
+    history = model.fit(train_vectors[0], train_vectors[1], validation_data=(validation_vectors[0], validation_vectors[1]), epochs=NUM_EPOCHS, batch_size=512, callbacks=[checkpoint])
    
     #Plot for Accurracy
     plot_figure(history,'Model Accuracy',['train','test'],['acc','val_acc'],'accuracy','epoch',model_name,plot_name)
