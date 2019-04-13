@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from keras.preprocessing.text import Tokenizer,  text_to_word_sequence
+from keras.preprocessing.sequence import pad_sequences
 from keras.engine.topology import Layer
 from keras import initializers as initializers, regularizers, constraints
 from keras.callbacks import Callback, ModelCheckpoint
@@ -22,6 +23,9 @@ import os
 import datetime
 my_path = os.path.abspath(os.path.dirname(__file__))
 print(my_path)
+
+
+MAX_SEQUENCE_LENGTH = 1000
 max_features=200000
 max_senten_len=40
 max_senten_num=12
@@ -169,9 +173,7 @@ def log(statement):
 # TODO : Train basis different learing rates. 
 
 # data_frame : ['body','label']
-def generate_embedding_matrix(data_frame):
-    labels = data_frame['label']
-    text = data_frame['body']
+def generate_han_embedding_matrix(data_frame):
     paras = []
     #labels = []
     texts = []
@@ -179,7 +181,10 @@ def generate_embedding_matrix(data_frame):
     sent_nums = []
     if sample_dataset:
         data_frame = data_frame.sample(n=NUM_SAMPLES)
-    print(data_frame.body.shape[0])
+
+    labels = data_frame['label']
+    text = data_frame['body']
+
     for body_text in data_frame['body']:
         text = clean_str(body_text)
         texts.append(text)
@@ -188,7 +193,7 @@ def generate_embedding_matrix(data_frame):
         for sent in sentences:
             sent_lens.append(len(text_to_word_sequence(sent)))
         paras.append(sentences)
-
+    
     tokenizer = Tokenizer(num_words=max_features, oov_token=True)
     tokenizer.fit_on_texts(texts)
 
@@ -256,28 +261,160 @@ def generate_embedding_matrix(data_frame):
 
     return embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors
 
-# data_frame : ['content_id','url','title','body','label']
-def train(data_frame,plot_name):
+def generate_rnn_embedding_matrix(data_frame):
+    paras = []
+    #labels = []
+    texts = []
+    sent_lens = []
+    sent_nums = []
+    if sample_dataset:
+        data_frame = data_frame.sample(n=NUM_SAMPLES)
+    labels = data_frame['label']
+    text = data_frame['body']
+    print(data_frame.body.shape[0])
+    for body_text in data_frame['body']:
+        text = clean_str(body_text)
+        texts.append(text)
+        sentences = tokenize.sent_tokenize(text)
+        sent_nums.append(len(sentences))
+        for sent in sentences:
+            sent_lens.append(len(text_to_word_sequence(sent)))
+        paras.append(sentences)
+
+    tokenizer = Tokenizer(num_words=max_features, oov_token=True)
+    tokenizer.fit_on_texts(texts)
+    sequences = tokenizer.texts_to_sequences(texts)
+    data = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
+    #Converts Labels to Digits. 
+    log('Shape of Data Tensor:')
+    log(data.shape)
+    seperated_labels = pd.get_dummies(labels)
+    log('Shape of Label Tensor:')
+    log(seperated_labels.shape)
+    indices = np.arange(data.shape[0])
+    np.random.shuffle(indices)
+    data = data[indices]
+    seperated_labels = seperated_labels.iloc[indices]
+    nb_validation_samples = int(VALIDATION_SPLIT * data.shape[0])
+
+    x_train = data[:-nb_validation_samples]
+    y_train = seperated_labels[:-nb_validation_samples]
+    x_val = data[-nb_validation_samples:]
+    y_val = seperated_labels[-nb_validation_samples:]
+
+    train_vectors = (x_train,y_train)
+    validation_vectors = (x_val,y_val)
+    word_index = tokenizer.word_index
+
+    #Create the Embedding Matrix
+    embeddings_index = {}
+    f = open(GLOVE_DIR)
+    for line in f:
+        try:
+            values = line.split()
+            word = values[0]
+            coefs = np.asarray(values[1:], dtype='float32')
+            embeddings_index[word] = coefs
+        except:
+            print(word)
+            pass
+    f.close()
+    print('Total %s word vectors.' % len(embeddings_index))
+
+    embedding_matrix = np.zeros((len(word_index) + 1, embed_size))
+    
+    #TODO: Figure Need for Absent word calc.
+    absent_words = 0
+    for word, i in word_index.items():
+        embedding_vector = embeddings_index.get(word)
+        if embedding_vector is not None:
+            # words not found in embedding index will be all-zeros.
+            embedding_matrix[i] = embedding_vector
+        else:
+            absent_words += 1
+    print('Total absent words are', absent_words, 'which is', "%0.2f" % (absent_words * 100 / len(word_index)), '% of total words')
+
+    return embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors
+
+def preprocess_data(data_frame):
     data_frame['body'] = data_frame['title'] +'. ' +data_frame  ['body']
     data_frame = data_frame[['body', 'label']]
     shuffle(data_frame).reset_index()
     data_frame =data_frame[~data_frame['body'].isnull()]
     log(len(data_frame['label'].unique()))
+    return data_frame
 
+def plot_figure(model_op,plot_title,lengend,keys,xlabel,ylabel,network_name,plot_name):
+    fig1 = plt.figure()
+    for key in keys: # ['acc','val_acc']
+        plt.plot(model_op.history[key])
+        #plt.plot(model_op.history['val_acc'])
+    plt.title(plot_title)
+    plt.ylabel(ylabel)
+    plt.xlabel(xlabel)
+    plt.legend(lengend, loc='upper left')
+    save_time=datetime.datetime.now().strftime('%b-%d-%Y-%H')
+    plot_name = network_name+'-'+plot_name+'-'+save_time 
+    plot_path = PLOT_FOLDER+plot_name+'-'+plot_title+'.png'
+    log(plot_path)
+    plot_path = os.path.join(my_path,plot_path)
+    #plt.savefig(plot_path)
+    fig1.savefig(plot_path)
+
+
+def train_lstm(data_frame,plot_name):
+    model_name = 'Bidirectional_LSTM'
+    data_frame = preprocess_data(data_frame)
     num_labels = len(data_frame['label'].unique())
-    embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors = generate_embedding_matrix(data_frame)
+    log("Running Bidirectional LSTM")
+    embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors = generate_rnn_embedding_matrix(data_frame)
+    embedding_layer = Embedding(len(word_index) + 1,embed_size,weights=[embedding_matrix], input_length=MAX_SEQUENCE_LENGTH, trainable=False)
+    sequence_input = Input(shape=(MAX_SEQUENCE_LENGTH,), dtype='int32')
+    embedded_sequences = embedding_layer(sequence_input)
+    l_lstm = Bidirectional(LSTM(100))(embedded_sequences)
+    preds = Dense(num_labels, activation='softmax')(l_lstm)
+    model = Model(sequence_input, preds)
+    model.compile(loss='categorical_crossentropy',
+                optimizer='rmsprop',
+                metrics=['acc'])
+    model.summary()
+    checkpoint_model_path =os.path.join(MODEL_FOLDER,model_name+'-'+plot_name+'.h5')
+    checkpoint = ModelCheckpoint(checkpoint_model_path, verbose=0, monitor='val_loss',save_best_only=True, mode='auto') 
+    history = model.fit(train_vectors[0], train_vectors[1], validation_data=(validation_vectors[0], validation_vectors[1]), epochs=5, batch_size=512, callbacks=[checkpoint])
+    #Plot for Accurracy
+    plot_figure(history,'Model Accuracy',['train','test'],['acc','val_acc'],'accuracy','epoch','Bidirectional_LSTM',plot_name)
+    # summarize history for loss
+    plot_figure(history,'Model Loss',['train','test'],['loss','val_loss'],'loss','epoch','Bidirectional_LSTM',plot_name)
+    model_json_path = os.path.join(MODEL_FOLDER,model_name+'-'+plot_name+".json")
+    model_json = model.to_json()
+    with open(model_json_path, "w") as json_file:
+        json_file.write(model_json)
+    # serialize weights to HDF5
+    h5_path = os.path.join(MODEL_FOLDER,model_name+'-'+plot_name+".h5")
+    model.save_weights(h5_path)
+    log("Saved model to disk")
+
+# data_frame : ['content_id','url','title','body','label']
+def train_han(data_frame,plot_name):
+    model_name = 'HAN'
+    data_frame = preprocess_data(data_frame)
+    log("Running HAN")
+    num_labels = len(data_frame['label'].unique())
+    embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors = generate_han_embedding_matrix(data_frame)
     embedding_layer = Embedding(len(word_index) + 1,embed_size,weights=[embedding_matrix], input_length=max_senten_len, trainable=False)
     
     #LSTM Regularizers --> Figure More
     l2_reg = regularizers.l2(REG_PARAM)
     
+    #Word Encoding Layers
     word_input = Input(shape=(max_senten_len,), dtype='float32')
     word_sequences = embedding_layer(word_input)
     word_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=l2_reg))(word_sequences)
     word_dense = TimeDistributed(Dense(200, kernel_regularizer=l2_reg))(word_lstm)
     word_att = AttentionWithContext()(word_dense)
     wordEncoder = Model(word_input, word_att)
-
+    
+    #Sentence Encoding Layers
     sent_input = Input(shape=(max_senten_num, max_senten_len), dtype='float32')
     sent_encoder = TimeDistributed(wordEncoder)(sent_input)
     sent_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=l2_reg))(sent_encoder)
@@ -289,43 +426,22 @@ def train(data_frame,plot_name):
     log("Training Model ")
     checkpoint = ModelCheckpoint('best_model.h5', verbose=0, monitor='val_loss',save_best_only=True, mode='auto') 
     history = model.fit(train_vectors[0], train_vectors[1], validation_data=(validation_vectors[0], validation_vectors[1]), epochs=5, batch_size=512, callbacks=[checkpoint])
-    
+   
     #Plot for Accurracy
-    plt.plot(history.history['acc'])
-    plt.plot(history.history['val_acc'])
-    plt.title('model accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    save_time=datetime.datetime.now().strftime('%b-%d-%Y-%H')
-    plot_name = plot_name+'-'+save_time 
-    plot_path = PLOT_FOLDER+plot_name+'-'+'-acc.png'
-    log(plot_path)
-    plot_path = os.path.join(my_path,plot_path)
-    plt.savefig(plot_path)
-
+    plot_figure(history,'Model Accuracy',['train','test'],['acc','val_acc'],'accuracy','epoch',model_name,plot_name)
     # summarize history for loss
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('model loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plot_path = PLOT_FOLDER+plot_name+'-val_loss.png'
-    log(plot_path)
-    plot_path = os.path.join(my_path,plot_path)
-    plt.savefig(plot_path)
-
+    plot_figure(history,'Model Loss',['train','test'],['loss','val_loss'],'loss','epoch',model_name,plot_name)
     log("Plots are Written ")
-
     # serialize model to JSON
-    model_json_path = os.path.join(MODEL_FOLDER,plot_name+".json")
+    model_json_path = os.path.join(MODEL_FOLDER,model_name+'-'+plot_name+".json")
     model_json = model.to_json()
     with open(model_json_path, "w") as json_file:
         json_file.write(model_json)
     # serialize weights to HDF5
-    model.save_weights(MODEL_FOLDER+plot_name+".h5")
+    h5_path = os.path.join(MODEL_FOLDER,model_name+'-'+plot_name+".h5")
+    model.save_weights(h5_path)
     log("Saved model to disk")
 
+    #TODO : Figure Confusion Matrix. 
     
 
