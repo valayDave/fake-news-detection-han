@@ -20,8 +20,8 @@ from sklearn.utils import shuffle
 import re
 import os
 import datetime
-
-
+my_path = os.path.abspath(os.path.dirname(__file__))
+print(my_path)
 max_features=200000
 max_senten_len=40
 max_senten_num=12
@@ -29,8 +29,10 @@ embed_size=100
 VALIDATION_SPLIT = 0.2
 learning_rate = 0.6
 REG_PARAM = 1e-13
-PLOT_FOLDER = 'plots/'
-MODEL_FOLDER = 'models/'
+PLOT_FOLDER = os.path.join(my_path, 'plots/')
+MODEL_FOLDER = os.path.join(my_path, 'models/')
+sample_dataset = True
+NUM_SAMPLES = 5
 
 GLOVE_DIR = "glove.6B.100d.txt"
 
@@ -175,9 +177,10 @@ def generate_embedding_matrix(data_frame):
     texts = []
     sent_lens = []
     sent_nums = []
+    if sample_dataset:
+        data_frame = data_frame.sample(n=NUM_SAMPLES)
     print(data_frame.body.shape[0])
     for body_text in data_frame['body']:
-    # for idx in range(data_frame.body.shape[0]):
         text = clean_str(body_text)
         texts.append(text)
         sentences = tokenize.sent_tokenize(text)
@@ -285,7 +288,7 @@ def train(data_frame,plot_name):
     model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['acc'])
     log("Training Model ")
     checkpoint = ModelCheckpoint('best_model.h5', verbose=0, monitor='val_loss',save_best_only=True, mode='auto') 
-    history = model.fit(train_vectors[0], train_vectors[1], validation_data=(validation_vectors[0], validation_vectors[1]), epochs=50, batch_size=512, callbacks=[checkpoint])
+    history = model.fit(train_vectors[0], train_vectors[1], validation_data=(validation_vectors[0], validation_vectors[1]), epochs=5, batch_size=512, callbacks=[checkpoint])
     
     #Plot for Accurracy
     plt.plot(history.history['acc'])
@@ -294,8 +297,12 @@ def train(data_frame,plot_name):
     plt.ylabel('accuracy')
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
-    save_time=datetime.datetime.now().strftime('%b/%d/%Y-%H')
-    plt.savefig(PLOT_FOLDER+plot_name+'-'+save_time+'-acc.png')
+    save_time=datetime.datetime.now().strftime('%b-%d-%Y-%H')
+    plot_name = plot_name+'-'+save_time 
+    plot_path = PLOT_FOLDER+plot_name+'-'+'-acc.png'
+    log(plot_path)
+    plot_path = os.path.join(my_path,plot_path)
+    plt.savefig(plot_path)
 
     # summarize history for loss
     plt.plot(history.history['loss'])
@@ -304,13 +311,17 @@ def train(data_frame,plot_name):
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
-    plt.savefig(PLOT_FOLDER+plot_name+'-'+save_time+'-val_loss.png')
+    plot_path = PLOT_FOLDER+plot_name+'-val_loss.png'
+    log(plot_path)
+    plot_path = os.path.join(my_path,plot_path)
+    plt.savefig(plot_path)
 
     log("Plots are Written ")
 
     # serialize model to JSON
+    model_json_path = os.path.join(MODEL_FOLDER,plot_name+".json")
     model_json = model.to_json()
-    with open(MODEL_FOLDER+plot_name+".json", "w") as json_file:
+    with open(model_json_path, "w") as json_file:
         json_file.write(model_json)
     # serialize weights to HDF5
     model.save_weights(MODEL_FOLDER+plot_name+".h5")
