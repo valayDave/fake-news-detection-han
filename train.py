@@ -38,7 +38,7 @@ PLOT_FOLDER = os.path.join(my_path, 'plots/')
 MODEL_FOLDER = os.path.join(my_path, 'models/')
 sample_dataset = False
 NUM_SAMPLES = 20
-NUM_EPOCHS = 5
+NUM_EPOCHS = 50
 
 GLOVE_DIR = "glove.6B.100d.txt"
 
