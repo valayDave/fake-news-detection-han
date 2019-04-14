@@ -36,7 +36,7 @@ learning_rate = 0.6
 REG_PARAM = 1e-13
 PLOT_FOLDER = os.path.join(my_path, 'plots/')
 MODEL_FOLDER = os.path.join(my_path, 'models/')
-sample_dataset = True
+sample_dataset = False
 NUM_SAMPLES = 20
 NUM_EPOCHS = 5
 
@@ -418,7 +418,7 @@ def train_lstm(data_frame,plot_name):
     checkpoint = ModelCheckpoint(checkpoint_model_path, verbose=0, monitor='val_loss',save_best_only=True, mode='auto') 
     history = model.fit(train_vectors[0], train_vectors[1], validation_data=(validation_vectors[0], validation_vectors[1]), epochs=NUM_EPOCHS, batch_size=512, callbacks=[checkpoint])
     #Plot for Accurracy
-    plot_figure(history,'Model Accuracy',['train','test'],['acc','val_acc'],'epoch','accuracy','Bidirectional_LSTM',plot_name)
+    plot_figure(history,'Model Accuracy',['train','test'],['categorical_accuracy','val_categorical_accuracy'],'epoch','accuracy','Bidirectional_LSTM',plot_name)
     # summarize history for loss
     plot_figure(history,'Model Loss',['train','test'],['loss','val_loss'],'epoch','loss','Bidirectional_LSTM',plot_name)
     #Get Accuracy Basis Test Set
