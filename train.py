@@ -31,12 +31,13 @@ max_senten_len=40
 max_senten_num=12
 embed_size=100
 VALIDATION_SPLIT = 0.2
+TEST_SPLIT = 0.2
 learning_rate = 0.6
 REG_PARAM = 1e-13
 PLOT_FOLDER = os.path.join(my_path, 'plots/')
 MODEL_FOLDER = os.path.join(my_path, 'models/')
 sample_dataset = True
-NUM_SAMPLES = 5
+NUM_SAMPLES = 20
 NUM_EPOCHS = 5
 
 GLOVE_DIR = "glove.6B.100d.txt"
@@ -172,6 +173,18 @@ def log(statement):
 # TODO : Train on basis of the word vectors. 
 
 # TODO : Train basis different learing rates. 
+def get_testset_accuracy(model,test_vectors):
+    predictions = model.predict(test_vectors[0])
+    predicted_classes = np.argmax(predictions,axis=1)
+    iterator_index = 0
+    correct_preds = 0
+    test_set_accuracy = 0
+    for actual_vals in test_vectors[1].values:
+        if actual_vals[predicted_classes[iterator_index]] == 1:
+            correct_preds+=1
+        iterator_index+=1
+    test_set_accuracy = float(correct_preds/iterator_index)
+    return test_set_accuracy
 
 # data_frame : ['body','label']
 def generate_han_embedding_matrix(data_frame):
@@ -223,15 +236,25 @@ def generate_han_embedding_matrix(data_frame):
     seperated_labels = seperated_labels.iloc[indices]
     nb_validation_samples = int(VALIDATION_SPLIT * data.shape[0])
 
-    x_train = data[:-nb_validation_samples]
-    y_train = seperated_labels[:-nb_validation_samples]
+    pre_x_train = data[:-nb_validation_samples]
+    pre_y_train = seperated_labels[:-nb_validation_samples]
+   
+    nb_test_samples = int(TEST_SPLIT * pre_x_train.shape[0])
+    x_test = pre_x_train[-nb_test_samples:]  #Create Test Samples From the Train Samples 
+    y_test = pre_y_train[-nb_test_samples:]
+    
+    x_train = pre_x_train[:-nb_test_samples]
+    y_train = pre_y_train[:-nb_test_samples]
+
     x_val = data[-nb_validation_samples:]
     y_val = seperated_labels[-nb_validation_samples:]
 
     train_vectors = (x_train,y_train)
     validation_vectors = (x_val,y_val)
+    test_vectors = (x_test,y_test)
     word_index = tokenizer.word_index
-
+    log("Shape Of Train Test and Validate Vectors")
+    print(train_vectors[0].shape[0],test_vectors[0].shape[0],validation_vectors[0].shape[0])
     #Create the Embedding Matrix
     embeddings_index = {}
     f = open(GLOVE_DIR)
@@ -260,7 +283,7 @@ def generate_han_embedding_matrix(data_frame):
             absent_words += 1
     print('Total absent words are', absent_words, 'which is', "%0.2f" % (absent_words * 100 / len(word_index)), '% of total words')
 
-    return embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors
+    return embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors
 
 def generate_rnn_embedding_matrix(data_frame):
     paras = []
@@ -298,15 +321,27 @@ def generate_rnn_embedding_matrix(data_frame):
     seperated_labels = seperated_labels.iloc[indices]
     nb_validation_samples = int(VALIDATION_SPLIT * data.shape[0])
 
-    x_train = data[:-nb_validation_samples]
-    y_train = seperated_labels[:-nb_validation_samples]
+    pre_x_train = data[:-nb_validation_samples]
+    pre_y_train = seperated_labels[:-nb_validation_samples]
+   
+    nb_test_samples = int(TEST_SPLIT * pre_x_train.shape[0])
+    x_test = pre_x_train[-nb_test_samples:]  #Create Test Samples From the Train Samples 
+    y_test = pre_y_train[-nb_test_samples:]
+    
+    x_train = pre_x_train[:-nb_test_samples]
+    y_train = pre_y_train[:-nb_test_samples]
+
+
     x_val = data[-nb_validation_samples:]
     y_val = seperated_labels[-nb_validation_samples:]
 
     train_vectors = (x_train,y_train)
     validation_vectors = (x_val,y_val)
+    test_vectors = (x_test,y_test)
     word_index = tokenizer.word_index
 
+    log("Shape Of Train Test and Validate Vectors")
+    print(train_vectors[0].shape[0],test_vectors[0].shape[0],validation_vectors[0].shape[0])
     #Create the Embedding Matrix
     embeddings_index = {}
     f = open(GLOVE_DIR)
@@ -335,7 +370,7 @@ def generate_rnn_embedding_matrix(data_frame):
             absent_words += 1
     print('Total absent words are', absent_words, 'which is', "%0.2f" % (absent_words * 100 / len(word_index)), '% of total words')
 
-    return embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors
+    return embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors
 
 def preprocess_data(data_frame):
     data_frame['body'] = data_frame['title'] +'. ' +data_frame  ['body']
@@ -368,7 +403,7 @@ def train_lstm(data_frame,plot_name):
     data_frame = preprocess_data(data_frame)
     num_labels = len(data_frame['label'].unique())
     log("Running Bidirectional LSTM")
-    embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors = generate_rnn_embedding_matrix(data_frame)
+    embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors = generate_rnn_embedding_matrix(data_frame)
     embedding_layer = Embedding(len(word_index) + 1,embed_size,weights=[embedding_matrix], input_length=MAX_SEQUENCE_LENGTH, trainable=False)
     sequence_input = Input(shape=(MAX_SEQUENCE_LENGTH,), dtype='int32')
     embedded_sequences = embedding_layer(sequence_input)
@@ -377,7 +412,7 @@ def train_lstm(data_frame,plot_name):
     model = Model(sequence_input, preds)
     model.compile(loss='categorical_crossentropy',
                 optimizer='rmsprop',
-                metrics=['acc'])
+                metrics=['categorical_accuracy'])
     model.summary()
     checkpoint_model_path =os.path.join(MODEL_FOLDER,model_name+'-checkpoint-'+plot_name+'.h5')
     checkpoint = ModelCheckpoint(checkpoint_model_path, verbose=0, monitor='val_loss',save_best_only=True, mode='auto') 
@@ -386,15 +421,11 @@ def train_lstm(data_frame,plot_name):
     plot_figure(history,'Model Accuracy',['train','test'],['acc','val_acc'],'epoch','accuracy','Bidirectional_LSTM',plot_name)
     # summarize history for loss
     plot_figure(history,'Model Loss',['train','test'],['loss','val_loss'],'epoch','loss','Bidirectional_LSTM',plot_name)
-    # model_json_path = os.path.join(MODEL_FOLDER,model_name+'-'+plot_name+".json")
-    # model_json = model.to_json()
-    # with open(model_json_path, "w") as json_file:
-    #     json_file.write(model_json)
-    # # serialize weights to HDF5
-    # h5_path = os.path.join(MODEL_FOLDER,model_name+'-'+plot_name+".h5")
-    # model.save_weights(h5_path)
-    # log("Saved model to disk")
-    return history
+    #Get Accuracy Basis Test Set
+    test_set_accuracy = get_testset_accuracy(model,test_vectors)
+    log("Test Set Accuracy "+model_name+" "+plot_name)
+    log(test_set_accuracy)
+    return history,model,test_set_accuracy
 
 # data_frame : ['content_id','url','title','body','label']
 def train_han(data_frame,plot_name):
@@ -402,7 +433,7 @@ def train_han(data_frame,plot_name):
     data_frame = preprocess_data(data_frame)
     log("Running HAN")
     num_labels = len(data_frame['label'].unique())
-    embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors = generate_han_embedding_matrix(data_frame)
+    embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors = generate_han_embedding_matrix(data_frame)
     embedding_layer = Embedding(len(word_index) + 1,embed_size,weights=[embedding_matrix], input_length=max_senten_len, trainable=False)
     
     #LSTM Regularizers --> Figure More
@@ -424,27 +455,23 @@ def train_han(data_frame,plot_name):
     sent_att = Dropout(0.5)(AttentionWithContext()(sent_dense))
     preds = Dense(num_labels, activation='softmax')(sent_att)
     model = Model(sent_input, preds)
-    model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['acc'])
+    model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['categorical_accuracy'])
     log("Training Model ")
     checkpoint_model_path =os.path.join(MODEL_FOLDER,model_name+'-checkpoint-'+plot_name+'.h5')
     checkpoint = ModelCheckpoint(checkpoint_model_path, verbose=0, monitor='val_loss',save_best_only=True, mode='auto') 
     history = model.fit(train_vectors[0], train_vectors[1], validation_data=(validation_vectors[0], validation_vectors[1]), epochs=NUM_EPOCHS, batch_size=512, callbacks=[checkpoint])
-   
+    log(history.history)
     #Plot for Accurracy
-    plot_figure(history,'Model Accuracy',['train','test'],['acc','val_acc'],'epoch','accuracy',model_name,plot_name)
+    plot_figure(history,'Model Accuracy',['train','test'],['categorical_accuracy','val_categorical_accuracy'],'epoch','accuracy',model_name,plot_name)
     # summarize history for loss
     plot_figure(history,'Model Loss',['train','test'],['loss','val_loss'],'epoch','loss',model_name,plot_name)
     log("Plots are Written ")
-    # serialize model to JSON
-    # model_json_path = os.path.join(MODEL_FOLDER,model_name+'-'+plot_name+".json")
-    # model_json = model.to_json()
-    # with open(model_json_path, "w") as json_file:
-    #     json_file.write(model_json)
-    # # serialize weights to HDF5
-    # h5_path = os.path.join(MODEL_FOLDER,model_name+'-'+plot_name+".h5")
-    # model.save_weights(h5_path)
-    # log("Saved model to disk")
-    return history
+
+    #Get Accuracy Basis Test Set
+    test_set_accuracy = get_testset_accuracy(model,test_vectors)
+    log("Test Set Accuracy "+model_name+" "+plot_name)
+    log(test_set_accuracy)
+    return history,model,test_set_accuracy
 
     #TODO : Figure Confusion Matrix. 
     
