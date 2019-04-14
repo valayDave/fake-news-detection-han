@@ -8,7 +8,7 @@ my_path = os.path.abspath(os.path.dirname(__file__))
 PLOT_FOLDER = os.path.join(my_path, 'plots/')
 MODEL_FOLDER = os.path.join(my_path, 'models/')
 
-test_case_name = 'MULTI_LABEL_HAN_vs_LSTM'
+test_case_name = 'MULTI_LABEL_SPLIT1_HAN_vs_LSTM'
 
 dataset_path = 'datasets/split-1.csv'
 
@@ -37,3 +37,4 @@ plot_models([LSTM_Model_History,HAN_MODEL_History],['LSTM','HAN'],'val_categoric
 
 LSTM_Model.save(os.path.join(MODEL_FOLDER,test_case_name+'_LSTM.h5'))
 HAN_MODEL.save(os.path.join(MODEL_FOLDER,test_case_name+'_HAN.h5'))
+print("#"*20+" Completed Execution "+"#"*20)
