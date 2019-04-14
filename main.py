@@ -8,7 +8,7 @@ my_path = os.path.abspath(os.path.dirname(__file__))
 PLOT_FOLDER = os.path.join(my_path, 'plots/')
 MODEL_FOLDER = os.path.join(my_path, 'models/')
 
-test_case_name = 'MULTI_LABEL_SPLIT1_HAN_vs_LSTM'
+test_case_name = 'MULTI_LABEL_SPLIT1_3HAN_TEST'
 
 dataset_path = 'datasets/split-1.csv'
 
