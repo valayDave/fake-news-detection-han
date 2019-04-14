@@ -525,7 +525,7 @@ def train_han_3(data_frame,plot_name):
     sent_dense = TimeDistributed(Dense(100, kernel_regularizer=regularization_parameter))(sent_lstm) #Change Here to accomodate for the Reshape
     sent_att = Dropout(DROPOUT_VALUE)(AttentionWithContext()(sent_dense))
     
-    sent_att = Reshape((1, sent_att._keras_shape[1]))(sent_att) # THERE WAS A BUG HERE WHEN THE TimeDistributed was 100!
+    sent_att = Reshape((1, sent_att._keras_shape[1]))(sent_att) # THERE WAS A BUG HERE WHEN THE TimeDistributed was 150! --> Basically Incoming shape needs to be same. 
     
     #Headline Encoding Layers. 
     headline_input = Input(shape=(max_senten_len,),dtype='float32')
@@ -533,8 +533,9 @@ def train_han_3(data_frame,plot_name):
     sent_att = Masking(mask_value=0.0)(sent_att)		
     headline_body_embedding = concatenate([headline_embedding_layer, sent_att], axis=1)
     headline_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=regularization_parameter))(headline_body_embedding)
+    headline_dense = TimeDistributed(Dense(100, kernel_regularizer=regularization_parameter))(headline_lstm)
     #TODO : Check if TimeDistributed can be applied here or not. 
-    headline_att = Dropout(DROPOUT_VALUE)(AttentionWithContext()(headline_lstm))
+    headline_att = Dropout(DROPOUT_VALUE)(AttentionWithContext()(headline_dense))
     #TODO: Original Author has done One layer in the preds layer with dense 1 :: Need to Figure Why. 
     preds = Dense(num_labels, activation='softmax')(headline_att)
 
