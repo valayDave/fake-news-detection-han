@@ -30,10 +30,10 @@ LSTM_Model_History,LSTM_Model,LSTM_accuracy = model.train_lstm(df,test_case_name
 
 HAN_MODEL_History,HAN_MODEL,HAN_accuracy = model.train_han(df,test_case_name)
 
-plot_models([LSTM_Model_History,HAN_MODEL_History],['LSTM','HAN','HAN-3'],'val_loss','Epochs','Validation Loss','Validation_Loss')
-plot_models([LSTM_Model_History,HAN_MODEL_History],['LSTM','HAN','HAN-3'],'categorical_accuracy','Epochs','Accuracy','Accuracy')
-plot_models([LSTM_Model_History,HAN_MODEL_History],['LSTM','HAN','HAN-3'],'loss','Epochs','Loss','Loss')
-plot_models([LSTM_Model_History,HAN_MODEL_History],['LSTM','HAN','HAN-3'],'val_categorical_accuracy','Epochs','Validation Accuracy','Validation_Accuracy')
+plot_models([LSTM_Model_History,HAN_MODEL_History,HAN3_MODEL_History],['LSTM','HAN','HAN-3'],'val_loss','Epochs','Validation Loss','Validation_Loss')
+plot_models([LSTM_Model_History,HAN_MODEL_History,HAN3_MODEL_History],['LSTM','HAN','HAN-3'],'categorical_accuracy','Epochs','Accuracy','Accuracy')
+plot_models([LSTM_Model_History,HAN_MODEL_History,HAN3_MODEL_History],['LSTM','HAN','HAN-3'],'loss','Epochs','Loss','Loss')
+plot_models([LSTM_Model_History,HAN_MODEL_History,HAN3_MODEL_History],['LSTM','HAN','HAN-3'],'val_categorical_accuracy','Epochs','Validation Accuracy','Validation_Accuracy')
 # plot_model(LSTM_Model, to_file=os.path.join(MODEL_FOLDER,test_case_name+'_Model_LSTM.png'), show_shapes=True, show_layer_names=True)
 # plot_model(HAN_MODEL, to_file=os.path.join(MODEL_FOLDER,test_case_name+'_Model_LSTM.png'), show_shapes=True, show_layer_names=True)
 han_dataframe = pd.DataFrame(HAN_MODEL_History.history)
