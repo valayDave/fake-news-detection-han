@@ -6,7 +6,8 @@ from keras.engine.topology import Layer
 from keras import initializers as initializers, regularizers, constraints
 from keras.callbacks import Callback, ModelCheckpoint
 from keras.utils.np_utils import to_categorical
-from keras.layers import Embedding, Input, Dense, LSTM, GRU, Bidirectional, TimeDistributed, Dropout
+from keras.layers import Embedding, Input, Dense, LSTM, GRU, Bidirectional, TimeDistributed, Dropout,concatenate,Masking
+from keras.layers.core import Reshape
 from keras import backend as K
 from keras import optimizers
 from keras.models import Model
@@ -36,9 +37,10 @@ learning_rate = 0.6
 REG_PARAM = 1e-13
 PLOT_FOLDER = os.path.join(my_path, 'plots/')
 MODEL_FOLDER = os.path.join(my_path, 'models/')
-sample_dataset = False
+sample_dataset = True
 NUM_SAMPLES = 20
-NUM_EPOCHS = 50
+NUM_EPOCHS = 5
+DROPOUT_VALUE = 0.5
 
 GLOVE_DIR = "glove.6B.100d.txt"
 
@@ -187,7 +189,7 @@ def get_testset_accuracy(model,test_vectors):
     return test_set_accuracy
 
 # data_frame : ['body','label']
-def generate_han_embedding_matrix(data_frame):
+def generate_han_embedding_matrix(data_frame,title_bool):
     paras = []
     #labels = []
     texts = []
@@ -197,11 +199,14 @@ def generate_han_embedding_matrix(data_frame):
         data_frame = data_frame.sample(n=NUM_SAMPLES)
 
     labels = data_frame['label']
-    text = data_frame['body']
-
-    for body_text in data_frame['body']:
+    headlines = []
+    
+    for row in data_frame.itertuples():
+        body_text = row.body
+        headline_text = clean_str(row.title)
         text = clean_str(body_text)
         texts.append(text)
+        headlines.append(headline_text)
         sentences = tokenize.sent_tokenize(text)
         sent_nums.append(len(sentences))
         for sent in sentences:
@@ -211,7 +216,10 @@ def generate_han_embedding_matrix(data_frame):
     tokenizer = Tokenizer(num_words=max_features, oov_token=True)
     tokenizer.fit_on_texts(texts)
 
-    data = np.zeros((len(texts), max_senten_num, max_senten_len), dtype='int32')
+    headline_tokenizer = Tokenizer(num_words=max_features, oov_token=True)
+    headline_tokenizer.fit_on_texts(headlines)
+
+    tokenized_body = np.zeros((len(texts), max_senten_num, max_senten_len), dtype='int32')
     for i, sentences in enumerate(paras):
         for j, sent in enumerate(sentences):
             if j< max_senten_num:
@@ -220,23 +228,26 @@ def generate_han_embedding_matrix(data_frame):
                 for _, word in enumerate(wordTokens):
                     try:
                         if k<max_senten_len and tokenizer.word_index[word]<max_features:
-                            data[i,j,k] = tokenizer.word_index[word]
+                            tokenized_body[i,j,k] = tokenizer.word_index[word]
                             k=k+1
                     except:
                         print(word)
                         pass
+    
     #TODO: Figure the above
-    print(data.shape)
-
+    headline_sequence = headline_tokenizer.texts_to_sequences(headlines)
+    tokenized_headlines = pad_sequences(headline_sequence,maxlen=max_senten_len)
     #Converts Labels to Digits. 
     seperated_labels = pd.get_dummies(labels)
-    indices = np.arange(data.shape[0])
+    indices = np.arange(tokenized_body.shape[0])
     np.random.shuffle(indices)
-    data = data[indices]
+    tokenized_body = tokenized_body[indices]
     seperated_labels = seperated_labels.iloc[indices]
-    nb_validation_samples = int(VALIDATION_SPLIT * data.shape[0])
+    tokenized_headlines =tokenized_headlines[indices]
+    
+    nb_validation_samples = int(VALIDATION_SPLIT * tokenized_body.shape[0])
 
-    pre_x_train = data[:-nb_validation_samples]
+    pre_x_train = tokenized_body[:-nb_validation_samples]
     pre_y_train = seperated_labels[:-nb_validation_samples]
    
     nb_test_samples = int(TEST_SPLIT * pre_x_train.shape[0])
@@ -246,16 +257,30 @@ def generate_han_embedding_matrix(data_frame):
     x_train = pre_x_train[:-nb_test_samples]
     y_train = pre_y_train[:-nb_test_samples]
 
-    x_val = data[-nb_validation_samples:]
+    x_val = tokenized_body[-nb_validation_samples:]
     y_val = seperated_labels[-nb_validation_samples:]
+
+    if title_bool:
+        pre_headline_train = tokenized_headlines[:-nb_validation_samples]
+        headlines_test = pre_headline_train[-nb_test_samples:]
+        headlines_train = pre_headline_train[:-nb_test_samples]
+        headlines_val = tokenized_headlines[-nb_validation_samples:]
+        x_val = [x_val,headlines_val]
+        x_train = [x_train,headlines_train]
+        x_test = [x_test,headlines_test]
+        log("Shape Of Train Test and Validate Vectors For Headlines")
+        print(x_train[1].shape,x_test[1].shape,x_val[1].shape)
+    else:
+        log("Shape Of Train Test and Validate Vectors")
+        print(x_train.shape,x_test.shape,x_val.shape)
 
     train_vectors = (x_train,y_train)
     validation_vectors = (x_val,y_val)
     test_vectors = (x_test,y_test)
     word_index = tokenizer.word_index
-    log("Shape Of Train Test and Validate Vectors")
-    print(train_vectors[0].shape[0],test_vectors[0].shape[0],validation_vectors[0].shape[0])
+    
     #Create the Embedding Matrix
+
     embeddings_index = {}
     f = open(GLOVE_DIR)
     for line in f:
@@ -283,7 +308,7 @@ def generate_han_embedding_matrix(data_frame):
             absent_words += 1
     print('Total absent words are', absent_words, 'which is', "%0.2f" % (absent_words * 100 / len(word_index)), '% of total words')
 
-    return embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors
+    return embedding_matrix,tokenized_body,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors
 
 def generate_rnn_embedding_matrix(data_frame):
     paras = []
@@ -308,20 +333,20 @@ def generate_rnn_embedding_matrix(data_frame):
     tokenizer = Tokenizer(num_words=max_features, oov_token=True)
     tokenizer.fit_on_texts(texts)
     sequences = tokenizer.texts_to_sequences(texts)
-    data = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
+    tokenized_body = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
     #Converts Labels to Digits. 
     log('Shape of Data Tensor:')
-    log(data.shape)
+    log(tokenized_body.shape)
     seperated_labels = pd.get_dummies(labels)
     log('Shape of Label Tensor:')
     log(seperated_labels.shape)
-    indices = np.arange(data.shape[0])
+    indices = np.arange(tokenized_body.shape[0])
     np.random.shuffle(indices)
-    data = data[indices]
+    tokenized_body = tokenized_body[indices]
     seperated_labels = seperated_labels.iloc[indices]
-    nb_validation_samples = int(VALIDATION_SPLIT * data.shape[0])
+    nb_validation_samples = int(VALIDATION_SPLIT * tokenized_body.shape[0])
 
-    pre_x_train = data[:-nb_validation_samples]
+    pre_x_train = tokenized_body[:-nb_validation_samples]
     pre_y_train = seperated_labels[:-nb_validation_samples]
    
     nb_test_samples = int(TEST_SPLIT * pre_x_train.shape[0])
@@ -332,7 +357,7 @@ def generate_rnn_embedding_matrix(data_frame):
     y_train = pre_y_train[:-nb_test_samples]
 
 
-    x_val = data[-nb_validation_samples:]
+    x_val = tokenized_body[-nb_validation_samples:]
     y_val = seperated_labels[-nb_validation_samples:]
 
     train_vectors = (x_train,y_train)
@@ -341,7 +366,7 @@ def generate_rnn_embedding_matrix(data_frame):
     word_index = tokenizer.word_index
 
     log("Shape Of Train Test and Validate Vectors")
-    print(train_vectors[0].shape[0],test_vectors[0].shape[0],validation_vectors[0].shape[0])
+    print(train_vectors[0].shape,test_vectors[0].shape,validation_vectors[0].shape)
     #Create the Embedding Matrix
     embeddings_index = {}
     f = open(GLOVE_DIR)
@@ -370,11 +395,11 @@ def generate_rnn_embedding_matrix(data_frame):
             absent_words += 1
     print('Total absent words are', absent_words, 'which is', "%0.2f" % (absent_words * 100 / len(word_index)), '% of total words')
 
-    return embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors
+    return embedding_matrix,tokenized_body,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors
 
 def preprocess_data(data_frame):
     data_frame['body'] = data_frame['title'] +'. ' +data_frame  ['body']
-    data_frame = data_frame[['body', 'label']]
+    data_frame = data_frame[['body', 'label','title']]
     shuffle(data_frame).reset_index()
     data_frame =data_frame[~data_frame['body'].isnull()]
     log(len(data_frame['label'].unique()))
@@ -396,7 +421,6 @@ def plot_figure(model_op,plot_title,lengend,keys,xlabel,ylabel,network_name,plot
     plot_path = os.path.join(my_path,plot_path)
     #plt.savefig(plot_path)
     fig1.savefig(plot_path)
-
 
 def train_lstm(data_frame,plot_name):
     model_name = 'Bidirectional_LSTM'
@@ -433,25 +457,25 @@ def train_han(data_frame,plot_name):
     data_frame = preprocess_data(data_frame)
     log("Running HAN")
     num_labels = len(data_frame['label'].unique())
-    embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors = generate_han_embedding_matrix(data_frame)
+    embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors = generate_han_embedding_matrix(data_frame,False)
     embedding_layer = Embedding(len(word_index) + 1,embed_size,weights=[embedding_matrix], input_length=max_senten_len, trainable=False)
     
     #LSTM Regularizers --> Figure More
-    l2_reg = regularizers.l2(REG_PARAM)
+    regularization_parameter = regularizers.l2(REG_PARAM)
     
     #Word Encoding Layers
     word_input = Input(shape=(max_senten_len,), dtype='float32')
     word_sequences = embedding_layer(word_input)
-    word_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=l2_reg))(word_sequences)
-    word_dense = TimeDistributed(Dense(200, kernel_regularizer=l2_reg))(word_lstm)
+    word_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=regularization_parameter))(word_sequences)
+    word_dense = TimeDistributed(Dense(200, kernel_regularizer=regularization_parameter))(word_lstm)
     word_att = AttentionWithContext()(word_dense)
     wordEncoder = Model(word_input, word_att)
     
     #Sentence Encoding Layers
     sent_input = Input(shape=(max_senten_num, max_senten_len), dtype='float32')
     sent_encoder = TimeDistributed(wordEncoder)(sent_input)
-    sent_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=l2_reg))(sent_encoder)
-    sent_dense = TimeDistributed(Dense(200, kernel_regularizer=l2_reg))(sent_lstm)
+    sent_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=regularization_parameter))(sent_encoder)
+    sent_dense = TimeDistributed(Dense(200, kernel_regularizer=regularization_parameter))(sent_lstm)
     sent_att = Dropout(0.5)(AttentionWithContext()(sent_dense))
     preds = Dense(num_labels, activation='softmax')(sent_att)
     model = Model(sent_input, preds)
@@ -474,5 +498,63 @@ def train_han(data_frame,plot_name):
     return history,model,test_set_accuracy
 
     #TODO : Figure Confusion Matrix. 
+
+def train_han_3(data_frame,plot_name):
+    model_name = '3-HAN'
+    data_frame = preprocess_data(data_frame)
+    log("Running 3-HAN")
+    num_labels = len(data_frame['label'].unique())
+    embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors = generate_han_embedding_matrix(data_frame,True)
+    embedding_layer = Embedding(len(word_index) + 1,embed_size,weights=[embedding_matrix], input_length=max_senten_len, trainable=False)
     
+    #LSTM Regularizers --> Figure More
+    regularization_parameter = regularizers.l2(REG_PARAM)
+    
+    #Word Encoding Layers
+    word_input = Input(shape=(max_senten_len,), dtype='float32')
+    word_sequences = embedding_layer(word_input)
+    word_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=regularization_parameter))(word_sequences)
+    word_dense = TimeDistributed(Dense(100, kernel_regularizer=regularization_parameter))(word_lstm)
+    word_att = AttentionWithContext()(word_dense)
+    wordEncoder = Model(word_input, word_att)
+    
+    #Sentence Encoding Layers
+    sent_input = Input(shape=(max_senten_num, max_senten_len), dtype='float32')
+    sent_encoder = TimeDistributed(wordEncoder)(sent_input)
+    sent_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=regularization_parameter))(sent_encoder)
+    sent_dense = TimeDistributed(Dense(100, kernel_regularizer=regularization_parameter))(sent_lstm) #Change Here to accomodate for the Reshape
+    sent_att = Dropout(DROPOUT_VALUE)(AttentionWithContext()(sent_dense))
+    
+    sent_att = Reshape((1, sent_att._keras_shape[1]))(sent_att) # THERE WAS A BUG HERE WHEN THE TimeDistributed was 100!
+    
+    #Headline Encoding Layers. 
+    headline_input = Input(shape=(max_senten_len,),dtype='float32')
+    headline_embedding_layer = Embedding(len(word_index) + 1, embed_size,input_length=max_senten_len, mask_zero=True,)(headline_input)
+    sent_att = Masking(mask_value=0.0)(sent_att)		
+    headline_body_embedding = concatenate([headline_embedding_layer, sent_att], axis=1)
+    headline_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=regularization_parameter))(headline_body_embedding)
+    #TODO : Check if TimeDistributed can be applied here or not. 
+    headline_att = Dropout(DROPOUT_VALUE)(AttentionWithContext()(headline_lstm))
+    #TODO: Original Author has done One layer in the preds layer with dense 1 :: Need to Figure Why. 
+    preds = Dense(num_labels, activation='softmax')(headline_att)
+
+    model = Model([sent_input,headline_input], preds)
+    model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['categorical_accuracy'])
+    log("Training Model ")
+    checkpoint_model_path =os.path.join(MODEL_FOLDER,model_name+'-checkpoint-'+plot_name+'.h5')
+    checkpoint = ModelCheckpoint(checkpoint_model_path, verbose=0, monitor='val_loss',save_best_only=True, mode='auto') 
+    history = model.fit(train_vectors[0], train_vectors[1], validation_data=(validation_vectors[0], validation_vectors[1]), epochs=NUM_EPOCHS, batch_size=512, callbacks=[checkpoint])
+    log(history.history)
+    #Plot for Accurracy
+    plot_figure(history,'Model Accuracy',['train','test'],['categorical_accuracy','val_categorical_accuracy'],'epoch','accuracy',model_name,plot_name)
+    # summarize history for loss
+    plot_figure(history,'Model Loss',['train','test'],['loss','val_loss'],'epoch','loss',model_name,plot_name)
+    log("Plots are Written ")
+
+    #Get Accuracy Basis Test Set
+    test_set_accuracy = get_testset_accuracy(model,test_vectors)
+    log("Test Set Accuracy "+model_name+" "+plot_name)
+    log(test_set_accuracy)
+    return history,model,test_set_accuracy
+
 
