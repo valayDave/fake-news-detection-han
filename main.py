@@ -34,7 +34,10 @@ plot_models([LSTM_Model_History,HAN_MODEL_History],['LSTM','HAN'],'loss','Epochs
 plot_models([LSTM_Model_History,HAN_MODEL_History],['LSTM','HAN'],'val_categorical_accuracy','Epochs','Validation Accuracy','Validation_Accuracy')
 # plot_model(LSTM_Model, to_file=os.path.join(MODEL_FOLDER,test_case_name+'_Model_LSTM.png'), show_shapes=True, show_layer_names=True)
 # plot_model(HAN_MODEL, to_file=os.path.join(MODEL_FOLDER,test_case_name+'_Model_LSTM.png'), show_shapes=True, show_layer_names=True)
-
+han_dataframe = pd.DataFrame(HAN_MODEL_History.history)
+lstm_dataframe = pd.DataFrame(LSTM_Model_History.history)
 LSTM_Model.save(os.path.join(MODEL_FOLDER,test_case_name+'_LSTM.h5'))
 HAN_MODEL.save(os.path.join(MODEL_FOLDER,test_case_name+'_HAN.h5'))
+lstm_dataframe.to_csv(os.path.join(MODEL_FOLDER,test_case_name+'_HAN.csv'))
+han_dataframe.to_csv(os.path.join(MODEL_FOLDER,test_case_name+'_HAN.csv'))
 print("#"*20+" Completed Execution "+"#"*20)
