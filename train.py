@@ -37,9 +37,9 @@ learning_rate = 0.6
 REG_PARAM = 1e-13
 PLOT_FOLDER = os.path.join(my_path, 'plots/')
 MODEL_FOLDER = os.path.join(my_path, 'models/')
-sample_dataset = True
+sample_dataset = False
 NUM_SAMPLES = 20
-NUM_EPOCHS = 5
+NUM_EPOCHS = 25
 DROPOUT_VALUE = 0.5
 
 GLOVE_DIR = "glove.6B.100d.txt"

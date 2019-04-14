@@ -28,7 +28,7 @@ HAN3_MODEL_History,HAN3_MODEL,HAN3_accuracy = model.train_han_3(df,test_case_nam
 
 LSTM_Model_History,LSTM_Model,LSTM_accuracy = model.train_lstm(df,test_case_name)
 
-HAN_MODEL_History,HAN_MODEL,HAN_accuracy = model.train_lstm(df,test_case_name)
+HAN_MODEL_History,HAN_MODEL,HAN_accuracy = model.train_han(df,test_case_name)
 
 plot_models([LSTM_Model_History,HAN_MODEL_History],['LSTM','HAN','HAN-3'],'val_loss','Epochs','Validation Loss','Validation_Loss')
 plot_models([LSTM_Model_History,HAN_MODEL_History],['LSTM','HAN','HAN-3'],'categorical_accuracy','Epochs','Accuracy','Accuracy')
