@@ -534,7 +534,6 @@ def train_han_3(data_frame,plot_name):
     headline_body_embedding = concatenate([headline_embedding_layer, sent_att], axis=1)
     headline_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=regularization_parameter))(headline_body_embedding)
     headline_dense = TimeDistributed(Dense(100, kernel_regularizer=regularization_parameter))(headline_lstm)
-    #TODO : Check if TimeDistributed can be applied here or not. 
     headline_att = Dropout(DROPOUT_VALUE)(AttentionWithContext()(headline_dense))
     #TODO: Original Author has done One layer in the preds layer with dense 1 :: Need to Figure Why. 
     preds = Dense(num_labels, activation='softmax')(headline_att)
