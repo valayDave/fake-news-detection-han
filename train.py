@@ -461,7 +461,7 @@ def train_lstm(data_frame,plot_name):
     return history,model,test_set_accuracy
 
 # data_frame : ['content_id','url','title','body','label']
-def train_han(data_frame,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REGULARIZER_VALUE):
+def train_han(data_frame,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REGULARIZER_VALUE,REG_VAL):
     model_name = 'HAN'
     data_frame = preprocess_data(data_frame)
     log("Running HAN")
@@ -470,9 +470,9 @@ def train_han(data_frame,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REGULARIZER_VALU
     embedding_layer = Embedding(len(word_index) + 1,embed_size,weights=[embedding_matrix], input_length=max_senten_len, trainable=False)
     if REGULARIZER_VALUE == 1:
     #LSTM Regularizers --> Figure More
-        regularization_parameter = regularizers.l1(REG_PARAM)
+        regularization_parameter = regularizers.l1(REG_VAL)
     else : 
-        regularization_parameter = regularizers.l2(REG_PARAM)
+        regularization_parameter = regularizers.l2(REG_VAL)
     #Word Encoding Layers
     word_input = Input(shape=(max_senten_len,), dtype='float32')
     word_sequences = embedding_layer(word_input)
