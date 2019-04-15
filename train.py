@@ -461,21 +461,22 @@ def train_lstm(data_frame,plot_name):
     return history,model,test_set_accuracy
 
 # data_frame : ['content_id','url','title','body','label']
-def train_han(data_frame,plot_name):
+def train_han(data_frame,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REGULARIZER_VALUE):
     model_name = 'HAN'
     data_frame = preprocess_data(data_frame)
     log("Running HAN")
     num_labels = len(data_frame['label'].unique())
     embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors = generate_han_embedding_matrix(data_frame,False)
     embedding_layer = Embedding(len(word_index) + 1,embed_size,weights=[embedding_matrix], input_length=max_senten_len, trainable=False)
-    
+    if REGULARIZER_VALUE == 1:
     #LSTM Regularizers --> Figure More
-    regularization_parameter = regularizers.l2(REG_PARAM)
-    
+        regularization_parameter = regularizers.l1(REG_PARAM)
+    else : 
+        regularization_parameter = regularizers.l2(REG_PARAM)
     #Word Encoding Layers
     word_input = Input(shape=(max_senten_len,), dtype='float32')
     word_sequences = embedding_layer(word_input)
-    word_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=regularization_parameter))(word_sequences)
+    word_lstm = Bidirectional(LSTM(LSTM_COUNT, return_sequences=True, kernel_regularizer=regularization_parameter))(word_sequences)
     word_dense = TimeDistributed(Dense(200, kernel_regularizer=regularization_parameter))(word_lstm)
     word_att = AttentionWithContext()(word_dense)
     wordEncoder = Model(word_input, word_att)
@@ -483,9 +484,9 @@ def train_han(data_frame,plot_name):
     #Sentence Encoding Layers
     sent_input = Input(shape=(max_senten_num, max_senten_len), dtype='float32')
     sent_encoder = TimeDistributed(wordEncoder)(sent_input)
-    sent_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=regularization_parameter))(sent_encoder)
+    sent_lstm = Bidirectional(LSTM(LSTM_COUNT, return_sequences=True, kernel_regularizer=regularization_parameter))(sent_encoder)
     sent_dense = TimeDistributed(Dense(200, kernel_regularizer=regularization_parameter))(sent_lstm)
-    sent_att = Dropout(0.5)(AttentionWithContext()(sent_dense))
+    sent_att = Dropout(DROPOUT_VALUE)(AttentionWithContext()(sent_dense))
     preds = Dense(num_labels, activation='softmax')(sent_att)
     model = Model(sent_input, preds)
     model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['categorical_accuracy'])
