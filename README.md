@@ -49,3 +49,5 @@
 - ![LSTM LOSS](final_models/plots/LSTM_Loss.png)
 
 ## Inference
+
+The 3 LSTM is overfit, But even with regularization and drop out the overfitting doesn't seem to go. The LSTM's predictions are also less accurate than the HAN
