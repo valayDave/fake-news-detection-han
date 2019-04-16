@@ -4,6 +4,8 @@
 
 - run ```./gather_data_training.sh``` to get Embedding Vectors, Training Data Files and the Tokenized Word Index
 
+- This will even download a Video File which displays the entire execution of the model. To run ```./gather_data_training.sh```,  ```wget``` needs to be a part of the system. Ubuntu 16.04 is the ideal environment. 
+
 ## Environment Setup
 
 - ```pip install -r req.txt```
@@ -30,7 +32,7 @@
 
     - https://github.com/keras-team/keras/issues/4904
 
-- To View the full capabilities of the Model, Please retrain the Model and the logs contain the accuracy and the loss of the model. 
+- To View the full capabilities of the Model, Please retrain the Model and the logs contain the accuracy and the loss of the model. The video that gets downloaded via ```gather_data_training.sh``` show cases a model training session for the HAN. 
 
 ## Best Results From Training : 
 
