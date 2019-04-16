@@ -9,6 +9,6 @@ perl gdown.pl https://drive.google.com/file/d/1AJJmr6BqgvNk7936LxfsBLaMC-OOK1RO/
 
 echo "Creating Training Data Folder And Downloading Tokenizer to the Folders"
 mkdir training-data
-perl gdown.pl https://drive.google.com/file/d/1x8hQlHpbcUk40T7zZenlHzSLX0OLxozU/view?usp=sharing datasets/split-1-tokenizer.pickle
-perl gdown.pl https://drive.google.com/file/d/1dwlHw4v2dzHjirx9368AGxKxPnMm3JqX/view?usp=sharing datasets/split-3-tokenizer.pickle
+perl gdown.pl https://drive.google.com/file/d/1x8hQlHpbcUk40T7zZenlHzSLX0OLxozU/view?usp=sharing training-data/split-1-tokenizer.pickle
+perl gdown.pl https://drive.google.com/file/d/1dwlHw4v2dzHjirx9368AGxKxPnMm3JqX/view?usp=sharing training-data/split-3-tokenizer.pickle
 
