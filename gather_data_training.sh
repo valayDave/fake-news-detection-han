@@ -6,3 +6,7 @@ mkdir datasets
 perl gdown.pl https://drive.google.com/file/d/14ztxuJLjHHyptAM0HVaxNio1SQcpzYfx/view?usp=sharing datasets/split-1.csv
 perl gdown.pl https://drive.google.com/file/d/1j3q9MyLkbBPae7S9_dRVwTpEjEi7yN0r/view?usp=sharing datasets/split-2.csv
 perl gdown.pl https://drive.google.com/file/d/1AJJmr6BqgvNk7936LxfsBLaMC-OOK1RO/view?usp=sharing datasets/split-3.csv
+
+echo "Creating Training Data Folder"
+mkdir training-data
+
