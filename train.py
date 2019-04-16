@@ -37,9 +37,9 @@ learning_rate = 0.6
 REG_PARAM = 1e-13
 PLOT_FOLDER = os.path.join(my_path, 'plots/')
 MODEL_FOLDER = os.path.join(my_path, 'models/')
-sample_dataset = False
+sample_dataset = True
 NUM_SAMPLES = 20
-NUM_EPOCHS = 100
+NUM_EPOCHS = 5
 DROPOUT_VALUE = 0.5
 
 GLOVE_DIR = "glove.6B.100d.txt"
@@ -567,16 +567,16 @@ def train_han_3(data_frame,word_index,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REG
     #Word Encoding Layers
     word_input = Input(shape=(max_senten_len,), dtype='float32')
     word_sequences = embedding_layer(word_input)
-    word_lstm = Bidirectional(LSTM(LSTM_COUNT, return_sequences=True, kernel_regularizer=regularization_parameter))(word_sequences)
-    word_dense = TimeDistributed(Dense(200, kernel_regularizer=regularization_parameter))(word_lstm)
+    word_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=regularization_parameter))(word_sequences)
+    word_dense = TimeDistributed(Dense(100, kernel_regularizer=regularization_parameter))(word_lstm)
     word_att = AttentionWithContext()(word_dense)
     wordEncoder = Model(word_input, word_att)
     
     #Sentence Encoding Layers
     sent_input = Input(shape=(max_senten_num, max_senten_len), dtype='float32')
     sent_encoder = TimeDistributed(wordEncoder)(sent_input)
-    sent_lstm = Bidirectional(LSTM(LSTM_COUNT, return_sequences=True, kernel_regularizer=regularization_parameter))(sent_encoder)
-    sent_dense = TimeDistributed(Dense(200, kernel_regularizer=regularization_parameter))(sent_lstm) #Change Here to accomodate for the Reshape
+    sent_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=regularization_parameter))(sent_encoder)
+    sent_dense = TimeDistributed(Dense(100, kernel_regularizer=regularization_parameter))(sent_lstm) #Change Here to accomodate for the Reshape
     sent_att = Dropout(NEW_DROPOUT_VALUE)(AttentionWithContext()(sent_dense))
     
     sent_att = Reshape((1, sent_att._keras_shape[1]))(sent_att) # THERE WAS A BUG HERE WHEN THE TimeDistributed was 150! --> Basically Incoming shape needs to be same. 
@@ -586,8 +586,8 @@ def train_han_3(data_frame,word_index,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REG
     headline_embedding_layer = Embedding(len(word_index) + 1, embed_size,input_length=max_senten_len, mask_zero=True,)(headline_input)
     sent_att = Masking(mask_value=0.0)(sent_att)		
     headline_body_embedding = concatenate([headline_embedding_layer, sent_att], axis=1)
-    headline_lstm = Bidirectional(LSTM(LSTM_COUNT, return_sequences=True, kernel_regularizer=regularization_parameter))(headline_body_embedding)
-    headline_dense = TimeDistributed(Dense(200, kernel_regularizer=regularization_parameter))(headline_lstm)
+    headline_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=regularization_parameter))(headline_body_embedding)
+    headline_dense = TimeDistributed(Dense(100, kernel_regularizer=regularization_parameter))(headline_lstm)
     headline_att = Dropout(NEW_DROPOUT_VALUE)(AttentionWithContext()(headline_dense))
     #TODO: Original Author has done One layer in the preds layer with dense 1 :: Need to Figure Why. 
     preds = Dense(num_labels, activation='softmax')(headline_att)

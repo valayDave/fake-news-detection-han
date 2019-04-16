@@ -35,10 +35,10 @@ final_dataframe = pd.read_csv(dataset_path)
 case_models = {
     1 : {
         'han': {
-            'h5':'models/HAN.h5'
+            'h5':'final_models/HAN.h5'
         },
         'lstm': {
-            'h5':'models/LSTM.h5'
+            'h5':'final_models/LSTM.h5'
         },
         # 'han3': {
         #     'json':'Test-cases/Case-11/models/HAN3.json',
