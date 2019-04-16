@@ -488,7 +488,7 @@ def train_lstm(data_frame,word_index,plot_name,LSTM_COUNT):
     # summarize history for loss
     plot_figure(history,'Model Loss',['train','test'],['loss','val_loss'],'epoch','loss','Bidirectional_LSTM',plot_name)
     #Get Accuracy Basis Test Set
-    test_set_accuracy,label_prediction_df = get_testset_accuracy(model,test_vectors)
+    test_set_accuracy,label_prediction_df = get_testset_accuracy(model,test_vectors,seperated_labels.columns.values)
     label_prediction_df.to_csv(os.path.join(MODEL_FOLDER,plot_name+'_'+model_name+'_prediction_accuracy.csv'))
     log("Test Set Accuracy Distribution "+model_name+" "+plot_name)
     log(label_prediction_df)
@@ -606,7 +606,7 @@ def train_han_3(data_frame,word_index,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REG
     log("Plots are Written ")
 
     #Get Accuracy Basis Test Set
-    test_set_accuracy,label_prediction_df = get_testset_accuracy(model,test_vectors)
+    test_set_accuracy,label_prediction_df = get_testset_accuracy(model,test_vectors,seperated_labels.columns.values)
     label_prediction_df.to_csv(os.path.join(MODEL_FOLDER,plot_name+'_'+model_name+'_prediction_accuracy.csv'))
     log("Test Set Accuracy Distribution "+model_name+" "+plot_name)
     log(label_prediction_df)

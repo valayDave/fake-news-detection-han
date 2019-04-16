@@ -31,56 +31,20 @@ with open('training-data/'+dataset_name+'-tokenizer.pickle', 'rb') as handle: #L
     word_index = pickle.load(handle)
 
 final_dataframe = pd.read_csv(dataset_path)
-models_for_cases = [
-    'Test-cases/Case-11/',
-    'Test-cases/Case-2/',
-    'Test-cases/Case-3/',
-    'Test-cases/Case-4/'
-]
 
 case_models = {
     1 : {
         'han': {
-            'json':'Test-cases/Case-20/models/HAN.json',
-            'h5':'Test-cases/Case-20/models/HAN.h5'
+            'h5':'models/HAN.h5'
         },
-        # 'lstm': {
-        #     'json':'Test-cases/Case-11/models/LSTM.json',
-        #     'h5':'Test-cases/Case-11/models/LSTM.h5'
-        # },
+        'lstm': {
+            'h5':'models/LSTM.h5'
+        },
         # 'han3': {
         #     'json':'Test-cases/Case-11/models/HAN3.json',
         #     'h5':'Test-cases/Case-11/models/HAN3.h5'
         # }
     },
-    # 2 : {
-    #     'han': {
-    #         'json':'Test-cases/Case-11/models/HAN.json',
-    #         'h5':'Test-cases/Case-11/models/HAN.h5'
-    #     },
-    #     'lstm': {
-    #         'json':'Test-cases/Case-11/models/LSTM.json',
-    #         'h5':'Test-cases/Case-11/models/LSTM.h5'
-    #     },
-    #     'han3': {
-    #         'json':'Test-cases/Case-11/models/HAN3.json',
-    #         'h5':'Test-cases/Case-11/models/HAN3.h5'
-    #     }
-    # },
-    # 3 : {
-    #     'han': {
-    #         'json':'Test-cases/Case-11/models/HAN.json',
-    #         'h5':'Test-cases/Case-11/models/HAN.h5'
-    #     },
-    #     'lstm': {
-    #         'json':'Test-cases/Case-11/models/LSTM.json',
-    #         'h5':'Test-cases/Case-11/models/LSTM.h5'
-    #     },
-    #     'han3': {
-    #         'json':'Test-cases/Case-11/models/HAN3.json',
-    #         'h5':'Test-cases/Case-11/models/HAN3.h5'
-    #     }
-    # }
 }
 
 MAX_SEQUENCE_LENGTH = 1000
@@ -317,7 +281,7 @@ def generate_test_data():
     seperated_labels = pd.get_dummies(labels)
     indices = np.arange(tokenized_han_body.shape[0])
 
-    # np.random.shuffle(indices)
+    np.random.shuffle(indices)
     tokenized_han_body = tokenized_han_body[indices]
     seperated_labels = seperated_labels.iloc[indices]
     tokenized_headlines =tokenized_headlines[indices]
@@ -356,21 +320,20 @@ possible_models = ['han','rnn','han3']
 
 han_test_vectors,han3_test_vectors,rnn_test_vectors = generate_test_data()
 
-def predict_for_case(json_path,h5_path,model_name):
-    j_file = open(json_path, 'r')
-    loaded_json_model = j_file.read()
-    j_file.close()
-    loaded_model = model_from_json(loaded_json_model,custom_objects={'AttentionWithContext':AttentionWithContext})
+def predict_for_case(h5_path,model_name):
     # predict_from_case(models_for_cases[0])
-    loaded_model.load_weights(h5_path)
-    loaded_model.summary()
     test_vectors = None
     if model_name  == 'han':
         test_vectors = han_test_vectors
+        loaded_model = load_model(h5_path,custom_objects={'AttentionWithContext':AttentionWithContext})
     elif model_name  == 'lstm':
         test_vectors = rnn_test_vectors
+        loaded_model = load_model(h5_path)
     elif model_name  == 'han3':
         test_vectors = han3_test_vectors
+        loaded_model = load_model(h5_path,custom_objects={'AttentionWithContext':AttentionWithContext})
+    loaded_model.load_weights(h5_path)
+    loaded_model.summary()
     test_set_accuracy,test_df = get_testset_accuracy(loaded_model,test_vectors,test_vectors[1].columns.values)
     log("Accuracy Distribution Over the Labels.")
     log(test_df)
@@ -381,6 +344,6 @@ for case_id in case_models:
     for model_name in case_models[case_id]:
         print_seperation()
         log("Running "+ model_name+" Test Case "+str(case_id))
-        predict_for_case(case_models[case_id][model_name]['json'],case_models[case_id][model_name]['h5'],model_name)
+        predict_for_case(case_models[case_id][model_name]['h5'],model_name)
         print_seperation()
 
