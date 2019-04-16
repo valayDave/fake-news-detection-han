@@ -267,7 +267,7 @@ def generate_han_embedding_matrix(data_frame,word_index,title_bool):
                 pass
     seperated_labels = pd.get_dummies(labels)
     indices = np.arange(tokenized_body.shape[0])
-    # np.random.shuffle(indices)
+    np.random.shuffle(indices)
     tokenized_body = tokenized_body[indices]
     seperated_labels = seperated_labels.iloc[indices]
     tokenized_headlines =tokenized_headlines[indices]
@@ -383,7 +383,7 @@ def generate_rnn_embedding_matrix(data_frame,word_index):
     log('Shape of Label Tensor:')
     log(seperated_labels.shape)
     indices = np.arange(tokenized_body.shape[0])
-    # np.random.shuffle(indices)
+    np.random.shuffle(indices)
     tokenized_body = tokenized_body[indices]
     seperated_labels = seperated_labels.iloc[indices]
     nb_validation_samples = int(VALIDATION_SPLIT * tokenized_body.shape[0])
