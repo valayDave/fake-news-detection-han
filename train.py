@@ -39,7 +39,7 @@ PLOT_FOLDER = os.path.join(my_path, 'plots/')
 MODEL_FOLDER = os.path.join(my_path, 'models/')
 sample_dataset = False
 NUM_SAMPLES = 20
-NUM_EPOCHS = 5
+NUM_EPOCHS = 100
 DROPOUT_VALUE = 0.5
 
 GLOVE_DIR = "glove.6B.100d.txt"
@@ -482,7 +482,7 @@ def plot_figure(model_op,plot_title,lengend,keys,xlabel,ylabel,network_name,plot
     #plt.savefig(plot_path)
     fig1.savefig(plot_path)
 
-def train_lstm(data_frame,word_index,plot_name):
+def train_lstm(data_frame,word_index,plot_name,LSTM_COUNT):
     model_name = 'Bidirectional_LSTM'
     data_frame = preprocess_data(data_frame)
     num_labels = len(data_frame['label'].unique())
@@ -491,7 +491,7 @@ def train_lstm(data_frame,word_index,plot_name):
     embedding_layer = Embedding(len(word_index) + 1,embed_size,weights=[embedding_matrix], input_length=MAX_SEQUENCE_LENGTH, trainable=False)
     sequence_input = Input(shape=(MAX_SEQUENCE_LENGTH,), dtype='int32')
     embedded_sequences = embedding_layer(sequence_input)
-    l_lstm = Bidirectional(LSTM(100))(embedded_sequences)
+    l_lstm = Bidirectional(LSTM(LSTM_COUNT))(embedded_sequences)
     preds = Dense(num_labels, activation='softmax')(l_lstm)
     model = Model(sequence_input, preds)
     model.compile(loss='categorical_crossentropy',
@@ -567,7 +567,7 @@ def train_han(data_frame,word_index,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REGUL
 
     #TODO : Figure Confusion Matrix. 
 
-def train_han_3(data_frame,word_index,plot_name):
+def train_han_3(data_frame,word_index,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REGULARIZER_VALUE,REG_VAL):
     model_name = '3-HAN'
     data_frame = preprocess_data(data_frame)
     log("Running 3-HAN")
@@ -576,22 +576,26 @@ def train_han_3(data_frame,word_index,plot_name):
     embedding_layer = Embedding(len(word_index) + 1,embed_size,weights=[embedding_matrix], input_length=max_senten_len, trainable=False)
     
     #LSTM Regularizers --> Figure More
-    regularization_parameter = regularizers.l2(REG_PARAM)
+    if REGULARIZER_VALUE == 1:
+    #LSTM Regularizers --> Figure More
+        regularization_parameter = regularizers.l1(REG_VAL)
+    else : 
+        regularization_parameter = regularizers.l2(REG_VAL)
     
     #Word Encoding Layers
     word_input = Input(shape=(max_senten_len,), dtype='float32')
     word_sequences = embedding_layer(word_input)
-    word_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=regularization_parameter))(word_sequences)
-    word_dense = TimeDistributed(Dense(100, kernel_regularizer=regularization_parameter))(word_lstm)
+    word_lstm = Bidirectional(LSTM(LSTM_COUNT, return_sequences=True, kernel_regularizer=regularization_parameter))(word_sequences)
+    word_dense = TimeDistributed(Dense(200, kernel_regularizer=regularization_parameter))(word_lstm)
     word_att = AttentionWithContext()(word_dense)
     wordEncoder = Model(word_input, word_att)
     
     #Sentence Encoding Layers
     sent_input = Input(shape=(max_senten_num, max_senten_len), dtype='float32')
     sent_encoder = TimeDistributed(wordEncoder)(sent_input)
-    sent_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=regularization_parameter))(sent_encoder)
-    sent_dense = TimeDistributed(Dense(100, kernel_regularizer=regularization_parameter))(sent_lstm) #Change Here to accomodate for the Reshape
-    sent_att = Dropout(DROPOUT_VALUE)(AttentionWithContext()(sent_dense))
+    sent_lstm = Bidirectional(LSTM(LSTM_COUNT, return_sequences=True, kernel_regularizer=regularization_parameter))(sent_encoder)
+    sent_dense = TimeDistributed(Dense(200, kernel_regularizer=regularization_parameter))(sent_lstm) #Change Here to accomodate for the Reshape
+    sent_att = Dropout(NEW_DROPOUT_VALUE)(AttentionWithContext()(sent_dense))
     
     sent_att = Reshape((1, sent_att._keras_shape[1]))(sent_att) # THERE WAS A BUG HERE WHEN THE TimeDistributed was 150! --> Basically Incoming shape needs to be same. 
     
@@ -600,9 +604,9 @@ def train_han_3(data_frame,word_index,plot_name):
     headline_embedding_layer = Embedding(len(word_index) + 1, embed_size,input_length=max_senten_len, mask_zero=True,)(headline_input)
     sent_att = Masking(mask_value=0.0)(sent_att)		
     headline_body_embedding = concatenate([headline_embedding_layer, sent_att], axis=1)
-    headline_lstm = Bidirectional(LSTM(150, return_sequences=True, kernel_regularizer=regularization_parameter))(headline_body_embedding)
-    headline_dense = TimeDistributed(Dense(100, kernel_regularizer=regularization_parameter))(headline_lstm)
-    headline_att = Dropout(DROPOUT_VALUE)(AttentionWithContext()(headline_dense))
+    headline_lstm = Bidirectional(LSTM(LSTM_COUNT, return_sequences=True, kernel_regularizer=regularization_parameter))(headline_body_embedding)
+    headline_dense = TimeDistributed(Dense(200, kernel_regularizer=regularization_parameter))(headline_lstm)
+    headline_att = Dropout(NEW_DROPOUT_VALUE)(AttentionWithContext()(headline_dense))
     #TODO: Original Author has done One layer in the preds layer with dense 1 :: Need to Figure Why. 
     preds = Dense(num_labels, activation='softmax')(headline_att)
 
