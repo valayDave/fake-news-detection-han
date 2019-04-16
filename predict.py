@@ -20,16 +20,45 @@ from nltk import tokenize
 import re
 import os
 import datetime
+import glob
+import pickle
 my_path = os.path.abspath(os.path.dirname(__file__))
-train_dataset_path = "" #These should be word Indexes.
-validation_dataset_path = "" #These should be word Indexes.
-test_dataset_path = "" #These should be word Indexes. 
+
+dataset_name = 'split-3'
+dataset_path = 'datasets/'+dataset_name+'.csv'
+word_index = None
+with open('training-data/'+dataset_name+'-tokenizer.pickle', 'rb') as handle: #Load the Word Tokenized Index
+    word_index = pickle.load(handle)
+
+final_dataframe = pd.read_csv(dataset_path)
+models_for_cases = [
+    'Test-cases/Case-1/',
+    'Test-cases/Case-2/',
+    'Test-cases/Case-3/',
+    'Test-cases/Case-4/'
+]
+
+MAX_SEQUENCE_LENGTH = 1000
+max_features=200000
+max_senten_len=40
+max_senten_num=12
+embed_size=100
+VALIDATION_SPLIT = 0.2
+TEST_SPLIT = 0.2
+sample_dataset = True
+NUM_SAMPLES = 20
+
 
 #TODO : Check if the dataset is downloaded. 
 # TODO : Save Indexed Dataset and Reuse in the Other Traing Sessions. 
 
 # train_path = os.path.join(my_path,'datasets/train.csv')
 # test_path = os.
+
+def log(statement):
+    print("+"*30)
+    print(statement)
+    print("+"*30)
 
 class AttentionWithContext(Layer):
     def __init__(self,
@@ -120,6 +149,18 @@ def dot_product(x, kernel):
     else:
         return K.dot(x, kernel)
 
+
+def clean_str(string):
+    """
+    Tokenization/string cleaning for dataset
+    Every dataset is lower cased except
+    """
+    string = re.sub(r"\\", "", string)    
+    string = re.sub(r"\'", "", string)    
+    string = re.sub(r"\"", "", string)    
+    return string.strip().lower()
+
+
 def get_testset_accuracy(model,test_vectors,label_arr):
     predictions = model.predict(test_vectors[0])
     predicted_classes = np.argmax(predictions,axis=1)
@@ -144,15 +185,137 @@ def get_testset_accuracy(model,test_vectors,label_arr):
     df = pd.DataFrame(val,columns=['Label','Correct_Label_Predictions','Total_Label_Docs','Prediction_Accuracy'])    
     return test_set_accuracy,df
 
-def get_test_data(file_path):
-    #Todo : go to the test case path and load its dataframe 
-    return ([],[]) # (Target,predictions)
-
-test_vectors = get_test_data("") # (Target,predictions)
-loaded_model = load_model("models/test-prod/HAN-test-1.h5",{'AttentionWithContext':AttentionWithContext})
-
-loaded_model.summary()
-
+def preprocess_data(data_frame):
+    data_frame['body'] = data_frame['title'] +'. ' +data_frame  ['body']
+    data_frame = data_frame[['body', 'label','title']]
+    shuffle(data_frame).reset_index()
+    data_frame =data_frame[~data_frame['body'].isnull()]
+    log(len(data_frame['label'].unique()))
+    return data_frame
 
 
-test_set_accuracy,df = get_testset_accuracy(loaded_model,test_vectors,test_vectors[1].columns.values)
+def generate_test_data():
+    global word_index
+    global final_dataframe
+    data_frame = final_dataframe
+    if word_index is None:
+        log("Word Index is Not Present. Please Download To Ensure Predictions")
+        return None        
+    paras = []
+    texts = []
+    sent_lens = []
+    sent_nums = []
+    if sample_dataset:
+        data_frame = data_frame.sample(n=NUM_SAMPLES)
+    labels = data_frame['label']
+    headlines = []
+    for row in data_frame.itertuples():
+        body_text = row.body
+        headline_text = clean_str(row.title)
+        text = clean_str(body_text)
+        texts.append(text)
+        headlines.append(headline_text)
+        sentences = tokenize.sent_tokenize(text)
+        sent_nums.append(len(sentences))
+        for sent in sentences:
+            sent_lens.append(len(text_to_word_sequence(sent)))
+        paras.append(sentences)
+    tokenized_rnn_body = np.zeros((len(texts), MAX_SEQUENCE_LENGTH), dtype='int32')
+
+    #Tokenize For the RNN
+    for i,text in enumerate(texts):
+        wordTokens = text_to_word_sequence(text)
+        k=0
+        for _,word in enumerate(wordTokens):
+            try:
+                if k<MAX_SEQUENCE_LENGTH and word_index[word]<max_features:
+                    tokenized_rnn_body[i,k] = word_index[word]
+                    k=k+1
+            except:
+                print(word)
+                pass
+
+    #Tokenize For the HAN
+    tokenized_han_body = np.zeros((len(texts), max_senten_num, max_senten_len), dtype='int32')
+    for i, sentences in enumerate(paras):
+        #print(sentences)
+        #print(i)
+        for j, sent in enumerate(sentences):
+            if j< max_senten_num:
+                wordTokens = text_to_word_sequence(sent)
+                k=0
+                for _, word in enumerate(wordTokens):
+                    try:
+                        if k<max_senten_len and word_index[word]<max_features:
+                            # print(word,word_index[word])   
+                            tokenized_han_body[i,j,k] = word_index[word]
+                            k=k+1
+                    except:
+                        print(word)
+                        pass
+    #Datastructure from the above [i:Article_Number,j:Sentence_number,k:Word Index]
+    
+    #Tokenize Headlines For the 3HAN
+    tokenized_headlines = np.zeros((len(texts), max_senten_len), dtype='int32')
+    for i,headline in enumerate(headlines):
+        wordTokens = text_to_word_sequence(headline)
+        for j,word in enumerate(wordTokens):
+            try:
+                if j<max_senten_len and word_index[word]<max_features:
+                    tokenized_headlines[i,j] = word_index[word]
+            except:
+                print(word)
+                pass
+    seperated_labels = pd.get_dummies(labels)
+    indices = np.arange(tokenized_han_body.shape[0])
+
+    np.random.shuffle(indices)
+    tokenized_han_body = tokenized_han_body[indices]
+    seperated_labels = seperated_labels.iloc[indices]
+    tokenized_headlines =tokenized_headlines[indices]
+    tokenized_rnn_body = tokenized_rnn_body[indices]
+
+    nb_validation_samples = int(VALIDATION_SPLIT * tokenized_han_body.shape[0])
+
+    pre_rnn_x_train = tokenized_rnn_body[:-nb_validation_samples]
+    pre_rnn_y_train = tokenized_rnn_body[:-nb_validation_samples]
+    pre_han_x_train = tokenized_han_body[:-nb_validation_samples]
+    pre_han_y_train = seperated_labels[:-nb_validation_samples]
+    pre_headline_train = tokenized_headlines[:-nb_validation_samples]
+
+    nb_test_samples = int(TEST_SPLIT * pre_han_x_train.shape[0])
+
+    han_x_test = pre_han_x_train[-nb_test_samples:]  #Create Test Samples From the Train Samples 
+    han_y_test = seperated_labels[-nb_test_samples:]
+    
+    rnn_x_test = pre_rnn_x_train[-nb_test_samples:]
+    rnn_y_test = seperated_labels[-nb_test_samples:]
+    
+    han3_headlines_test = pre_headline_train[-nb_test_samples:]
+    
+    han3_x_test = [han_x_test,han3_headlines_test]
+  
+    han_vectors = (han_x_test,han_y_test)
+    rnn_vectors = (rnn_x_test,rnn_y_test)
+    han3_vectors = (han3_x_test,han_y_test)    
+
+    word_index = word_index
+
+    #Create the Embedding Matrix
+    return han_vectors,han3_vectors,rnn_vectors # each vector is (testx,testy)
+
+possible_models = ['han','rnn','han3']
+
+han_test_vectors,han3_test_vectors,rnn_test_vectors = generate_test_data()
+
+def predict_from_case(case_path):
+    available_models = glob.glob(case_path+'models/*.h5')
+    for model_path in available_models:
+        model_name = model_path.split('/')[-1].split('.')[0]
+        load_model = None
+        print(model_path)
+        if 'han' in model_name.lower():
+            loaded_model = load_model(model_path,custom_objects={'AttentionWithContext':AttentionWithContext})
+
+
+predict_from_case(models_for_cases[0])

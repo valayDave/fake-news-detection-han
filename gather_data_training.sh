@@ -1,3 +1,7 @@
+echo "Setting Up The Folders :"
+mkdir plots
+mkdir models
+
 echo "Downloading Glove"
 #perl gdown.pl https://drive.google.com/file/d/19lKDBOWrvUqdQUUK2O5SuYMVJJQpue4R/view?usp=sharing glove.6B.100d.txt
 

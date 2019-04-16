@@ -94,26 +94,6 @@ def dot_product(x, kernel):
         return K.dot(x, kernel)
 
 class AttentionWithContext(Layer):
-    """
-    Attention operation, with a context/query vector, for temporal data.
-    Supports Masking.
-    Follows the work of Yang et al. [https://www.cs.cmu.edu/~diyiy/docs/naacl16.pdf]
-    "Hierarchical Attention Networks for Document Classification"
-    by using a context vector to assist the attention
-    # Input shape
-        3D tensor with shape: `(samples, steps, features)`.
-    # Output shape
-        2D tensor with shape: `(samples, features)`.
-    How to use:
-    Just put it on top of an RNN Layer (GRU/LSTM/SimpleRNN) with return_sequences=True.
-    The dimensions are inferred based on the output shape of the RNN.
-    Note: The layer has been tested with Keras 2.0.6
-    Example:
-        model.add(LSTM(64, return_sequences=True))
-        model.add(AttentionWithContext())
-        # next add a Dense layer (for classification/regression) or whatever...
-    """
-
     def __init__(self,
                  W_regularizer=None, u_regularizer=None, b_regularizer=None,
                  W_constraint=None, u_constraint=None, b_constraint=None,
