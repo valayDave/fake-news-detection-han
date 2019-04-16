@@ -12,10 +12,13 @@ MAX_SEQUENCE_LENGTH = 1000
 DATASET_FOLDER = os.path.join(my_path,'dataset/')
 from keras.preprocessing.text import Tokenizer,  text_to_word_sequence
 from keras.preprocessing.sequence import pad_sequences
+import pickle
+
 dataset_path = [
     'split-1.csv', #Contains Fake real and Opinions. 
     'split-3.csv' #Contains Fake and Real only
 ]
+
 
 sample_dataset = False
 NUM_SAMPLES = 20
@@ -159,14 +162,40 @@ def preprocess_data(data_frame):
     log(len(data_frame['label'].unique()))
     return data_frame
 
-def prepare_dataset(file_name):
-    df = pd.read_csv(os.path.join(DATASET_FOLDER,file_name))
+def prepare_dataset(file_name,path):
+    df = pd.read_csv(os.path.join(DATASET_FOLDER,path))
     df = preprocess_data(df)
 
     word_index,han_vectors,han3_vectors,rnn_vectors = generate_train_test_split(df)
 
     han_train,han_val,han_test = han_vectors
-    log(han_train.shape)
+    han_train[0].to_csv('training-data/'+file_name+'han_train_x.csv')
+    han_train[1].to_csv('training-data/'+file_name+'han_train_y.csv')  
+    han_val[0].to_csv('training-data/'+file_name+'han_val_x.csv')  
+    han_val[1].to_csv('training-data/'+file_name+'han_val_y.csv')  
+    han_test[0].to_csv('training-data/'+file_name+'han_test_x.csv')  
+    han_test[1].to_csv('training-data/'+file_name+'han_test_y.csv')  
 
-prepare_dataset(dataset_path[0])
+    rnn_train,rnn_val,rnn_test = rnn_vectors
+    rnn_train[0].to_csv('training-data/'+file_name+'rnn_train_x.csv')
+    rnn_train[1].to_csv('training-data/'+file_name+'rnn_train_y.csv')  
+    rnn_val[0].to_csv('training-data/'+file_name+'rnn_val_x.csv')  
+    rnn_val[1].to_csv('training-data/'+file_name+'rnn_val_y.csv')  
+    rnn_test[0].to_csv('training-data/'+file_name+'rnn_test_x.csv')  
+    rnn_test[1].to_csv('training-data/'+file_name+'rnn_test_y.csv')
+    
+    han3_train,han3_val,han3_test = rnn_vectors
+    han3_train[0].to_csv('training-data/'+file_name+'han3_train_x.csv')
+    han3_train[1].to_csv('training-data/'+file_name+'han3_train_y.csv')  
+    han3_val[0].to_csv('training-data/'+file_name+'han3_val_x.csv')  
+    han3_val[1].to_csv('training-data/'+file_name+'han3_val_y.csv')  
+    han3_test[0].to_csv('training-data/'+file_name+'han3_test_x.csv')  
+    han3_test[1].to_csv('training-data/'+file_name+'han3_test_y.csv')
+    # saving
+    with open('training-data/'+file_name+'tokenizer.pickle', 'wb') as handle:
+        pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL
+
+
+prepare_dataset('split-1',dataset_path[0])
+prepare_dataset('split-3',dataset_path[1])
 

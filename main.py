@@ -7,8 +7,39 @@ import datetime
 my_path = os.path.abspath(os.path.dirname(__file__))
 PLOT_FOLDER = os.path.join(my_path, 'plots/')
 MODEL_FOLDER = os.path.join(my_path, 'models/')
+TRAINING_DATA_FOLDER = os.path.join(my_path,'datasets/')
 
 test_case_name = 'HAN_LOSS_OPT'
+
+data_name = ['split-1','split-3']
+
+training_files = {
+    'han' : [
+        'han_train_x.csv',
+        'han_train_y.csv',
+        'han_val_x.csv' ,
+        'han_val_y.csv'  ,
+        'han_test_x.csv',
+        'han_test_y.csv'
+        ],
+    'han3' : [
+        'han3_train_x.csv',
+        'han3_train_y.csv',
+        'han3_val_x.csv' ,
+        'han3_val_y.csv'  ,
+        'han3_test_x.csv',
+        'han3_test_y.csv'
+        ],
+    'rnn' : [
+        'rnn_train_x.csv',
+        'rnn_train_y.csv',
+        'rnn_val_x.csv' ,
+        'rnn_val_y.csv'  ,
+        'rnn_test_x.csv',
+        'rnn_test_y.csv'
+        ]
+}
+
 
 
 
