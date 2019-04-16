@@ -12,9 +12,6 @@ TRAINING_DATA_FOLDER = os.path.join(my_path,'datasets/')
 
 test_case_name = 'HAN_LOSS_OPT'
 
-data_name = ['split-1','split-3']
-
-#model.train(df,'first_split_dataset_han')
 LSTM_COUNT = 100
 DROPOUT_VALUE = 0.5
 REGULARIZER = 1
