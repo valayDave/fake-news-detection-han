@@ -249,7 +249,7 @@ def plot_figure(model_op,plot_title,lengend,keys,xlabel,ylabel,network_name,plot
     #plt.savefig(plot_path)
     fig1.savefig(plot_path)
 
-def train_lstm(data_frame,plot_name):
+def train_lstm(train_vectors,validation_vectors,test_vectors,word_index,data_frame,plot_name):
     model_name = 'Bidirectional_LSTM'
     data_frame = preprocess_data(data_frame)
     num_labels = len(data_frame['label'].unique())

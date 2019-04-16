@@ -40,8 +40,23 @@ training_files = {
         ]
 }
 
+#model.train(df,'first_split_dataset_han')
+LSTM_COUNT = 100
+DROPOUT_VALUE = 0.5
+REGULARIZER = 1
+L1_REG_VALUE = 0.001
+L2_REG_VALUE = 1e-13
+REG_VALUE = None
+if REGULARIZER == 1:
+    REG_VALUE = L1_REG_VALUE
+else:
+    REG_VALUE = L2_REG_VALUE
 
+MODEL_CHOICE = ['han','rnn','han3']
 
+dataframes = [pd.read_csv(os.path.join(TRAINING_DATA_FOLDER,file)) for file in training_files['han']]
+
+print([df.shape for df in dataframes])
 
 dataset_path = 'datasets/split-1.csv'
 
@@ -55,17 +70,7 @@ def plot_models(model_arr,model_name_arr,model_key,xlabel,ylabel,plot_name):
     fig1.savefig(os.path.join(PLOT_FOLDER,test_case_name+'_'+plot_name+'.png'))
 
 df = pd.read_csv(dataset_path)
-#model.train(df,'first_split_dataset_han')
-LSTM_COUNT = 100
-DROPOUT_VALUE = 0.5
-REGULARIZER = 1
-L1_REG_VALUE = 0.001
-L2_REG_VALUE = 1e-13
-REG_VALUE = None
-if REGULARIZER == 1:
-    REG_VALUE = L1_REG_VALUE
-else:
-    REG_VALUE = L2_REG_VALUE
+
 
 test_case_name +='_'+'_'.join(map(str,[LSTM_COUNT,DROPOUT_VALUE,REGULARIZER,REG_VALUE]))
 HAN_MODEL_History,HAN_MODEL,HAN_accuracy = model.train_han(df,test_case_name,LSTM_COUNT,DROPOUT_VALUE,REGULARIZER,REG_VALUE)
