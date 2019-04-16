@@ -263,7 +263,7 @@ def generate_han_embedding_matrix(data_frame,word_index,title_bool):
                 if j<max_senten_len and word_index[word]<max_features:
                     tokenized_headlines[i,j] = word_index[word]
             except:
-                print(word)
+                # print(word)
                 pass
     seperated_labels = pd.get_dummies(labels)
     indices = np.arange(tokenized_body.shape[0])
@@ -317,7 +317,7 @@ def generate_han_embedding_matrix(data_frame,word_index,title_bool):
             coefs = np.asarray(values[1:], dtype='float32')
             embeddings_index[word] = coefs
         except:
-            print(word)
+            # print(word)
             pass
     f.close()
     print('Total %s word vectors.' % len(embeddings_index))
@@ -372,7 +372,7 @@ def generate_rnn_embedding_matrix(data_frame,word_index):
                 if j<max_senten_len and word_index[word]<max_features:
                     tokenized_body[i,j] = word_index[word]
             except:
-                print(word)
+                # print(word)
                 pass
     # sequences = tokenizer.texts_to_sequences(texts)
     # tokenized_body = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
@@ -537,15 +537,6 @@ def train_han(data_frame,word_index,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REGUL
     # summarize history for loss
     plot_figure(history,'Model Loss',['train','test'],['loss','val_loss'],'epoch','loss',model_name,plot_name)
     log("Plots are Written ")
-
-    for layer in model.layers:
-        weights = layer.get_weights()
-        log("LAYER")
-        print(weights)
-
-    log("Saving Model")
-    model.save('HAN.h5')
-
     #Get Accuracy Basis Test Set
     test_set_accuracy,label_prediction_df = get_testset_accuracy(model,test_vectors,seperated_labels.columns.values)
     label_prediction_df.to_csv(os.path.join(MODEL_FOLDER,plot_name+'_'+model_name+'_prediction_accuracy.csv'))
