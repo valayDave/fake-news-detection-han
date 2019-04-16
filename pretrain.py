@@ -199,7 +199,7 @@ def prepare_dataset(file_name,path):
     han3_test[1].to_csv('training-data/'+file_name+'han3_test_y.csv')
     # saving
     with open('training-data/'+file_name+'tokenizer.pickle', 'wb') as handle:
-        pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL
+        pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 prepare_dataset('split-1',dataset_path[0])
