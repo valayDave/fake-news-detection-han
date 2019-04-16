@@ -41,46 +41,46 @@ models_for_cases = [
 case_models = {
     1 : {
         'han': {
-            'json':'Test-cases/Case-11/models/HAN.json',
-            'h5':'Test-cases/Case-11/models/HAN.h5'
+            'json':'Test-cases/Case-20/models/HAN.json',
+            'h5':'Test-cases/Case-20/models/HAN.h5'
         },
-        'lstm': {
-            'json':'Test-cases/Case-11/models/LSTM.json',
-            'h5':'Test-cases/Case-11/models/LSTM.h5'
-        },
-        'han3': {
-            'json':'Test-cases/Case-11/models/HAN3.json',
-            'h5':'Test-cases/Case-11/models/HAN3.h5'
-        }
+        # 'lstm': {
+        #     'json':'Test-cases/Case-11/models/LSTM.json',
+        #     'h5':'Test-cases/Case-11/models/LSTM.h5'
+        # },
+        # 'han3': {
+        #     'json':'Test-cases/Case-11/models/HAN3.json',
+        #     'h5':'Test-cases/Case-11/models/HAN3.h5'
+        # }
     },
-    2 : {
-        'han': {
-            'json':'Test-cases/Case-11/models/HAN.json',
-            'h5':'Test-cases/Case-11/models/HAN.h5'
-        },
-        'lstm': {
-            'json':'Test-cases/Case-11/models/LSTM.json',
-            'h5':'Test-cases/Case-11/models/LSTM.h5'
-        },
-        'han3': {
-            'json':'Test-cases/Case-11/models/HAN3.json',
-            'h5':'Test-cases/Case-11/models/HAN3.h5'
-        }
-    },
-    3 : {
-        'han': {
-            'json':'Test-cases/Case-11/models/HAN.json',
-            'h5':'Test-cases/Case-11/models/HAN.h5'
-        },
-        'lstm': {
-            'json':'Test-cases/Case-11/models/LSTM.json',
-            'h5':'Test-cases/Case-11/models/LSTM.h5'
-        },
-        'han3': {
-            'json':'Test-cases/Case-11/models/HAN3.json',
-            'h5':'Test-cases/Case-11/models/HAN3.h5'
-        }
-    }
+    # 2 : {
+    #     'han': {
+    #         'json':'Test-cases/Case-11/models/HAN.json',
+    #         'h5':'Test-cases/Case-11/models/HAN.h5'
+    #     },
+    #     'lstm': {
+    #         'json':'Test-cases/Case-11/models/LSTM.json',
+    #         'h5':'Test-cases/Case-11/models/LSTM.h5'
+    #     },
+    #     'han3': {
+    #         'json':'Test-cases/Case-11/models/HAN3.json',
+    #         'h5':'Test-cases/Case-11/models/HAN3.h5'
+    #     }
+    # },
+    # 3 : {
+    #     'han': {
+    #         'json':'Test-cases/Case-11/models/HAN.json',
+    #         'h5':'Test-cases/Case-11/models/HAN.h5'
+    #     },
+    #     'lstm': {
+    #         'json':'Test-cases/Case-11/models/LSTM.json',
+    #         'h5':'Test-cases/Case-11/models/LSTM.h5'
+    #     },
+    #     'han3': {
+    #         'json':'Test-cases/Case-11/models/HAN3.json',
+    #         'h5':'Test-cases/Case-11/models/HAN3.h5'
+    #     }
+    # }
 }
 
 MAX_SEQUENCE_LENGTH = 1000
@@ -90,7 +90,7 @@ max_senten_num=12
 embed_size=100
 VALIDATION_SPLIT = 0.2
 TEST_SPLIT = 0.2
-sample_dataset = True
+sample_dataset = False
 NUM_SAMPLES = 20
 
 
@@ -172,7 +172,7 @@ class AttentionWithContext(Layer):
             a *= K.cast(mask, K.floatx())
 
         # in some cases especially in the early stages of training the sum may be almost zero
-        # and this results in NaN's. A workaround is to add a very small positive number ε to the sum.
+        # and this results in NaN's. A workaround is to add a very small positive number epsilon to the sum.
         # a /= K.cast(K.sum(a, axis=1, keepdims=True), K.floatx())
         a /= K.cast(K.sum(a, axis=1, keepdims=True) + K.epsilon(), K.floatx())
 
@@ -317,7 +317,7 @@ def generate_test_data():
     seperated_labels = pd.get_dummies(labels)
     indices = np.arange(tokenized_han_body.shape[0])
 
-    np.random.shuffle(indices)
+    # np.random.shuffle(indices)
     tokenized_han_body = tokenized_han_body[indices]
     seperated_labels = seperated_labels.iloc[indices]
     tokenized_headlines =tokenized_headlines[indices]
@@ -382,4 +382,5 @@ for case_id in case_models:
         print_seperation()
         log("Running "+ model_name+" Test Case "+str(case_id))
         predict_for_case(case_models[case_id][model_name]['json'],case_models[case_id][model_name]['h5'],model_name)
+        print_seperation()
 
