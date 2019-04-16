@@ -326,13 +326,16 @@ def predict_for_case(h5_path,model_name):
     if model_name  == 'han':
         test_vectors = han_test_vectors
         loaded_model = load_model(h5_path,custom_objects={'AttentionWithContext':AttentionWithContext})
+        loaded_model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['categorical_accuracy'])
     elif model_name  == 'lstm':
         test_vectors = rnn_test_vectors
         loaded_model = load_model(h5_path)
+        loaded_model.compile(loss='categorical_crossentropy',optimizer='rmsprop',metrics=['categorical_accuracy'])
     elif model_name  == 'han3':
         test_vectors = han3_test_vectors
         loaded_model = load_model(h5_path,custom_objects={'AttentionWithContext':AttentionWithContext})
-    loaded_model.load_weights(h5_path)
+        loaded_model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['categorical_accuracy'])
+    
     loaded_model.summary()
     test_set_accuracy,test_df = get_testset_accuracy(loaded_model,test_vectors,test_vectors[1].columns.values)
     log("Accuracy Distribution Over the Labels.")
