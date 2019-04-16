@@ -47,24 +47,30 @@ han_dataframe = pd.DataFrame(HAN_MODEL_History.history)
 han_dataframe.to_csv(os.path.join(MODEL_FOLDER,test_case_name+'_HAN.csv'))
 HAN_MODEL.save(os.path.join(MODEL_FOLDER,test_case_name+'_HAN.h5'))
 
+with open(os.path.join(MODEL_FOLDER,test_case_name+'_HAN.json'), "w") as j_file:
+    j_file.write(HAN_MODEL.to_json())
 LSTM_Model_History,LSTM_Model,LSTM_accuracy = model.train_lstm(df,word_index,test_case_name,LSTM_COUNT)
+
 LSTM_Model.save(os.path.join(MODEL_FOLDER,test_case_name+'_LSTM.h5'))
 lstm_dataframe = pd.DataFrame(LSTM_Model_History.history)
 lstm_dataframe.to_csv(os.path.join(MODEL_FOLDER,test_case_name+'_LSTM.csv'))
-
+with open(os.path.join(MODEL_FOLDER,test_case_name+'_LSTM.json'), "w") as j_file:
+    j_file.write(LSTM_Model.to_json())
 
 HAN3_MODEL_History,HAN3_MODEL,HAN3_accuracy = model.train_han_3(df,word_index,test_case_name,LSTM_COUNT,DROPOUT_VALUE,REGULARIZER,REG_VALUE)
 han3_dataframe = pd.DataFrame(HAN3_MODEL_History.history)
 HAN3_MODEL.save(os.path.join(MODEL_FOLDER,test_case_name+'_HAN3.h5'))
 han3_dataframe.to_csv(os.path.join(MODEL_FOLDER,test_case_name+'_HAN3.csv'))
+with open(os.path.join(MODEL_FOLDER,test_case_name+'_HAN3.json'), "w") as j_file:
+    j_file.write(HAN3_MODEL.to_json())
 
 plot_models([LSTM_Model_History,HAN_MODEL_History,HAN3_MODEL_History],['LSTM','HAN','HAN-3'],'val_loss','Epochs','Validation Loss','Validation_Loss')
 plot_models([LSTM_Model_History,HAN_MODEL_History,HAN3_MODEL_History],['LSTM','HAN','HAN-3'],'categorical_accuracy','Epochs','Accuracy','Accuracy')
 plot_models([LSTM_Model_History,HAN_MODEL_History,HAN3_MODEL_History],['LSTM','HAN','HAN-3'],'loss','Epochs','Loss','Loss')
 plot_models([LSTM_Model_History,HAN_MODEL_History,HAN3_MODEL_History],['LSTM','HAN','HAN-3'],'val_categorical_accuracy','Epochs','Validation Accuracy','Validation_Accuracy')
 
-# # plot_model(LSTM_Model, to_file=os.path.join(MODEL_FOLDER,test_case_name+'_Model_LSTM.png'), show_shapes=True, show_layer_names=True)
-# # plot_model(HAN_MODEL, to_file=os.path.join(MODEL_FOLDER,test_case_name+'_Model_LSTM.png'), show_shapes=True, show_layer_names=True)
+# # # plot_model(LSTM_Model, to_file=os.path.join(MODEL_FOLDER,test_case_name+'_Model_LSTM.png'), show_shapes=True, show_layer_names=True)
+# # # plot_model(HAN_MODEL, to_file=os.path.join(MODEL_FOLDER,test_case_name+'_Model_LSTM.png'), show_shapes=True, show_layer_names=True)
 
 
 print("#"*20+" Completed Execution "+"#"*20)
