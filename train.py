@@ -39,7 +39,7 @@ PLOT_FOLDER = os.path.join(my_path, 'plots/')
 MODEL_FOLDER = os.path.join(my_path, 'models/')
 sample_dataset = False
 NUM_SAMPLES = 20
-NUM_EPOCHS = 100
+NUM_EPOCHS = 7
 DROPOUT_VALUE = 0.5
 
 GLOVE_DIR = "glove.6B.100d.txt"
@@ -73,7 +73,7 @@ def clean_str(string):
     """
     Tokenization/string cleaning for dataset
     Every dataset is lower cased except
-    """
+    """f
     string = re.sub(r"\\", "", string)    
     string = re.sub(r"\'", "", string)    
     string = re.sub(r"\"", "", string)    
@@ -537,6 +537,11 @@ def train_han(data_frame,word_index,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REGUL
     # summarize history for loss
     plot_figure(history,'Model Loss',['train','test'],['loss','val_loss'],'epoch','loss',model_name,plot_name)
     log("Plots are Written ")
+
+    for layer in model.layers:
+        weights = layer.get_weights()
+        log("LAYER")
+        print(weights)
 
     #Get Accuracy Basis Test Set
     test_set_accuracy,label_prediction_df = get_testset_accuracy(model,test_vectors,seperated_labels.columns.values)
