@@ -37,7 +37,7 @@ learning_rate = 0.6
 REG_PARAM = 1e-13
 PLOT_FOLDER = os.path.join(my_path, 'plots/')
 MODEL_FOLDER = os.path.join(my_path, 'models/')
-sample_dataset = False
+sample_dataset = True
 NUM_SAMPLES = 20
 NUM_EPOCHS = 25
 DROPOUT_VALUE = 0.5
@@ -175,18 +175,29 @@ def log(statement):
 # TODO : Train on basis of the word vectors. 
 
 # TODO : Train basis different learing rates. 
-def get_testset_accuracy(model,test_vectors):
+def get_testset_accuracy(model,test_vectors,label_arr):
     predictions = model.predict(test_vectors[0])
     predicted_classes = np.argmax(predictions,axis=1)
     iterator_index = 0
     correct_preds = 0
     test_set_accuracy = 0
+    label_pred = [0 for label in label_arr]
+    label_total = [0 for label in label_arr]
     for actual_vals in test_vectors[1].values:
         if actual_vals[predicted_classes[iterator_index]] == 1:
             correct_preds+=1
+            label_pred[predicted_classes[iterator_index]]+=1
+        label_total[predicted_classes[iterator_index]]+=1
         iterator_index+=1
     test_set_accuracy = float(correct_preds/iterator_index)
-    return test_set_accuracy
+    val = []
+    for i in range(0,label_arr.__len__()):
+        if label_total[i] == 0:
+            val.append([label_arr[i],label_pred[i],label_total[i],0])
+        else:
+            val.append([label_arr[i],label_pred[i],label_total[i],(label_pred[i]/label_total[i])])
+    df = pd.DataFrame(val,columns=['Label','Correct_Label_Predictions','Total_Label_Docs','Prediction_Accuracy'])    
+    return test_set_accuracy,df
 
 # data_frame : ['body','label']
 def generate_han_embedding_matrix(data_frame,title_bool):
@@ -455,8 +466,11 @@ def train_lstm(data_frame,plot_name):
     # summarize history for loss
     plot_figure(history,'Model Loss',['train','test'],['loss','val_loss'],'epoch','loss','Bidirectional_LSTM',plot_name)
     #Get Accuracy Basis Test Set
-    test_set_accuracy = get_testset_accuracy(model,test_vectors)
-    log("Test Set Accuracy "+model_name+" "+plot_name)
+    test_set_accuracy,label_prediction_df = get_testset_accuracy(model,test_vectors)
+    label_prediction_df.to_csv(os.path.join(MODEL_FOLDER,plot_name+'_'+model_name+'_prediction_accuracy.csv'))
+    log("Test Set Accuracy Distribution "+model_name+" "+plot_name)
+    log(label_prediction_df)
+    log("Test Set Accuracy ")
     log(test_set_accuracy)
     return history,model,test_set_accuracy
 
@@ -468,6 +482,7 @@ def train_han(data_frame,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REGULARIZER_VALU
     num_labels = len(data_frame['label'].unique())
     embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors = generate_han_embedding_matrix(data_frame,False)
     embedding_layer = Embedding(len(word_index) + 1,embed_size,weights=[embedding_matrix], input_length=max_senten_len, trainable=False)
+    log(seperated_labels.columns.values)
     if REGULARIZER_VALUE == 1:
     #LSTM Regularizers --> Figure More
         regularization_parameter = regularizers.l1(REG_VAL)
@@ -502,8 +517,11 @@ def train_han(data_frame,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REGULARIZER_VALU
     log("Plots are Written ")
 
     #Get Accuracy Basis Test Set
-    test_set_accuracy = get_testset_accuracy(model,test_vectors)
-    log("Test Set Accuracy "+model_name+" "+plot_name)
+    test_set_accuracy,label_prediction_df = get_testset_accuracy(model,test_vectors,seperated_labels.columns.values)
+    label_prediction_df.to_csv(os.path.join(MODEL_FOLDER,plot_name+'_'+model_name+'_prediction_accuracy.csv'))
+    log("Test Set Accuracy Distribution "+model_name+" "+plot_name)
+    log(label_prediction_df)
+    log("Test Set Accuracy ")
     log(test_set_accuracy)
     return history,model,test_set_accuracy
 
@@ -562,8 +580,11 @@ def train_han_3(data_frame,plot_name):
     log("Plots are Written ")
 
     #Get Accuracy Basis Test Set
-    test_set_accuracy = get_testset_accuracy(model,test_vectors)
-    log("Test Set Accuracy "+model_name+" "+plot_name)
+    test_set_accuracy,label_prediction_df = get_testset_accuracy(model,test_vectors)
+    label_prediction_df.to_csv(os.path.join(MODEL_FOLDER,plot_name+'_'+model_name+'_prediction_accuracy.csv'))
+    log("Test Set Accuracy Distribution "+model_name+" "+plot_name)
+    log(label_prediction_df)
+    log("Test Set Accuracy ")
     log(test_set_accuracy)
     return history,model,test_set_accuracy
 
