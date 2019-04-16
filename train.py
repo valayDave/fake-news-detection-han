@@ -37,13 +37,36 @@ learning_rate = 0.6
 REG_PARAM = 1e-13
 PLOT_FOLDER = os.path.join(my_path, 'plots/')
 MODEL_FOLDER = os.path.join(my_path, 'models/')
-sample_dataset = False
-NUM_SAMPLES = 20
-NUM_EPOCHS = 25
+sample_dataset = True
+NUM_SAMPLES = 200
+NUM_EPOCHS = 5
 DROPOUT_VALUE = 0.5
 
 GLOVE_DIR = "glove.6B.100d.txt"
 
+
+def precision(y_true, y_pred):
+    """Precision metric.
+    Only computes a batch-wise average of precision.
+    Computes the precision, a metric for multi-label classification of
+    how many selected items are relevant.
+    """
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+    precision = true_positives / (predicted_positives + K.epsilon())
+    return precision
+
+
+def recall(y_true, y_pred):
+    """Recall metric.
+    Only computes a batch-wise average of recall.
+    Computes the recall, a metric for multi-label classification of
+    how many relevant items are selected.
+    """
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+    recall = true_positives / (possible_positives + K.epsilon())
+    return recall
 
 
 def clean_str(string):
@@ -200,7 +223,7 @@ def get_testset_accuracy(model,test_vectors,label_arr):
     return test_set_accuracy,df
 
 # data_frame : ['body','label']
-def generate_han_embedding_matrix(data_frame,title_bool):
+def generate_han_embedding_matrix(data_frame,word_index,title_bool):
     paras = []
     #labels = []
     texts = []
@@ -223,10 +246,12 @@ def generate_han_embedding_matrix(data_frame,title_bool):
         for sent in sentences:
             sent_lens.append(len(text_to_word_sequence(sent)))
         paras.append(sentences)
-    
-    tokenizer = Tokenizer(num_words=max_features, oov_token=True)
-    tokenizer.fit_on_texts(texts)
-
+    if word_index is None:
+        tokenizer = Tokenizer(num_words=max_features, oov_token=True)
+        tokenizer.fit_on_texts(texts)
+        word_index = tokenizer.word_index
+    else:
+        log("Using Predefined Word Index")
     # headline_tokenizer = Tokenizer(num_words=max_features, oov_token=True)
     # headline_tokenizer.fit_on_texts(headlines)
 
@@ -240,9 +265,9 @@ def generate_han_embedding_matrix(data_frame,title_bool):
                 k=0
                 for _, word in enumerate(wordTokens):
                     try:
-                        if k<max_senten_len and tokenizer.word_index[word]<max_features:
-                            # print(word,tokenizer.word_index[word])   
-                            tokenized_body[i,j,k] = tokenizer.word_index[word]
+                        if k<max_senten_len and word_index[word]<max_features:
+                            # print(word,word_index[word])   
+                            tokenized_body[i,j,k] = word_index[word]
                             k=k+1
                     except:
                         print(word)
@@ -253,8 +278,8 @@ def generate_han_embedding_matrix(data_frame,title_bool):
         wordTokens = text_to_word_sequence(headline)
         for j,word in enumerate(wordTokens):
             try:
-                if j<max_senten_len and tokenizer.word_index[word]<max_features:
-                    tokenized_headlines[i,j] = tokenizer.word_index[word]
+                if j<max_senten_len and word_index[word]<max_features:
+                    tokenized_headlines[i,j] = word_index[word]
             except:
                 print(word)
                 pass
@@ -297,7 +322,7 @@ def generate_han_embedding_matrix(data_frame,title_bool):
     train_vectors = (x_train,y_train)
     validation_vectors = (x_val,y_val)
     test_vectors = (x_test,y_test)
-    word_index = tokenizer.word_index
+    word_index = word_index
     
     #Create the Embedding Matrix
 
@@ -330,7 +355,7 @@ def generate_han_embedding_matrix(data_frame,title_bool):
 
     return embedding_matrix,tokenized_body,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors
 
-def generate_rnn_embedding_matrix(data_frame):
+def generate_rnn_embedding_matrix(data_frame,word_index):
     paras = []
     #labels = []
     texts = []
@@ -350,8 +375,13 @@ def generate_rnn_embedding_matrix(data_frame):
             sent_lens.append(len(text_to_word_sequence(sent)))
         paras.append(sentences)
 
-    tokenizer = Tokenizer(num_words=max_features, oov_token=True)
-    tokenizer.fit_on_texts(texts)
+    if word_index is None:
+        tokenizer = Tokenizer(num_words=max_features, oov_token=True)
+        tokenizer.fit_on_texts(texts)
+        word_index = tokenizer.word_index
+    else:
+        log("Using Predefined Word Index")
+
     sequences = tokenizer.texts_to_sequences(texts)
     tokenized_body = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
     #Converts Labels to Digits. 
@@ -383,7 +413,7 @@ def generate_rnn_embedding_matrix(data_frame):
     train_vectors = (x_train,y_train)
     validation_vectors = (x_val,y_val)
     test_vectors = (x_test,y_test)
-    word_index = tokenizer.word_index
+    word_index = word_index
 
     log("Shape Of Train Test and Validate Vectors")
     print(train_vectors[0].shape,test_vectors[0].shape,validation_vectors[0].shape)
@@ -442,12 +472,12 @@ def plot_figure(model_op,plot_title,lengend,keys,xlabel,ylabel,network_name,plot
     #plt.savefig(plot_path)
     fig1.savefig(plot_path)
 
-def train_lstm(data_frame,plot_name):
+def train_lstm(data_frame,word_index,plot_name):
     model_name = 'Bidirectional_LSTM'
     data_frame = preprocess_data(data_frame)
     num_labels = len(data_frame['label'].unique())
     log("Running Bidirectional LSTM")
-    embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors = generate_rnn_embedding_matrix(data_frame)
+    embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors = generate_rnn_embedding_matrix(data_frame,word_index)
     embedding_layer = Embedding(len(word_index) + 1,embed_size,weights=[embedding_matrix], input_length=MAX_SEQUENCE_LENGTH, trainable=False)
     sequence_input = Input(shape=(MAX_SEQUENCE_LENGTH,), dtype='int32')
     embedded_sequences = embedding_layer(sequence_input)
@@ -475,12 +505,12 @@ def train_lstm(data_frame,plot_name):
     return history,model,test_set_accuracy
 
 # data_frame : ['content_id','url','title','body','label']
-def train_han(data_frame,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REGULARIZER_VALUE,REG_VAL):
+def train_han(data_frame,word_index,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REGULARIZER_VALUE,REG_VAL):
     model_name = 'HAN'
     data_frame = preprocess_data(data_frame)
     log("Running HAN")
     num_labels = len(data_frame['label'].unique())
-    embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors = generate_han_embedding_matrix(data_frame,False)
+    embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors = generate_han_embedding_matrix(data_frame,word_index,False)
     embedding_layer = Embedding(len(word_index) + 1,embed_size,weights=[embedding_matrix], input_length=max_senten_len, trainable=False)
     log(seperated_labels.columns.values)
     if REGULARIZER_VALUE == 1:
@@ -527,12 +557,12 @@ def train_han(data_frame,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REGULARIZER_VALU
 
     #TODO : Figure Confusion Matrix. 
 
-def train_han_3(data_frame,plot_name):
+def train_han_3(data_frame,word_index,plot_name):
     model_name = '3-HAN'
     data_frame = preprocess_data(data_frame)
     log("Running 3-HAN")
     num_labels = len(data_frame['label'].unique())
-    embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors = generate_han_embedding_matrix(data_frame,True)
+    embedding_matrix,data,seperated_labels,word_index,train_vectors,validation_vectors,test_vectors = generate_han_embedding_matrix(data_frame,word_index,True)
     embedding_layer = Embedding(len(word_index) + 1,embed_size,weights=[embedding_matrix], input_length=max_senten_len, trainable=False)
     
     #LSTM Regularizers --> Figure More
