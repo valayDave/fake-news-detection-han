@@ -37,8 +37,8 @@ learning_rate = 0.6
 REG_PARAM = 1e-13
 PLOT_FOLDER = os.path.join(my_path, 'plots/')
 MODEL_FOLDER = os.path.join(my_path, 'models/')
-sample_dataset = True
-NUM_SAMPLES = 200
+sample_dataset = False
+NUM_SAMPLES = 20
 NUM_EPOCHS = 5
 DROPOUT_VALUE = 0.5
 
@@ -381,9 +381,19 @@ def generate_rnn_embedding_matrix(data_frame,word_index):
         word_index = tokenizer.word_index
     else:
         log("Using Predefined Word Index")
-
-    sequences = tokenizer.texts_to_sequences(texts)
-    tokenized_body = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
+    
+    tokenized_body = np.zeros((len(texts), MAX_SEQUENCE_LENGTH), dtype='int32')
+    for i,text in enumerate(texts):
+        wordTokens = text_to_word_sequence(text)
+        for j,word in enumerate(wordTokens):
+            try:
+                if j<max_senten_len and word_index[word]<max_features:
+                    tokenized_body[i,j] = word_index[word]
+            except:
+                print(word)
+                pass
+    # sequences = tokenizer.texts_to_sequences(texts)
+    # tokenized_body = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
     #Converts Labels to Digits. 
     log('Shape of Data Tensor:')
     log(tokenized_body.shape)

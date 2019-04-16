@@ -24,7 +24,7 @@ else:
     REG_VALUE = L2_REG_VALUE
 
 dataset_name = 'split-3'
-dataset_path = 'datasets/split-3.csv'
+dataset_path = 'datasets/'+dataset_name+'.csv'
 # loading Word Index.
 word_index = None
 with open('training-data/'+dataset_name+'-tokenizer.pickle', 'rb') as handle:
