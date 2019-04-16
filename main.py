@@ -12,8 +12,8 @@ TRAINING_DATA_FOLDER = os.path.join(my_path,'datasets/')
 
 test_case_name = 'HAN_LOSS_OPT'
 
-LSTM_COUNT = 100
-DROPOUT_VALUE = 0.5
+LSTM_COUNT = 150
+DROPOUT_VALUE = 0.2
 REGULARIZER = 1
 L1_REG_VALUE = 0.001
 L2_REG_VALUE = 1e-13
@@ -47,13 +47,13 @@ han_dataframe = pd.DataFrame(HAN_MODEL_History.history)
 han_dataframe.to_csv(os.path.join(MODEL_FOLDER,test_case_name+'_HAN.csv'))
 HAN_MODEL.save(os.path.join(MODEL_FOLDER,test_case_name+'_HAN.h5'))
 
-LSTM_Model_History,LSTM_Model,LSTM_accuracy = model.train_lstm(df,word_index,test_case_name)
+LSTM_Model_History,LSTM_Model,LSTM_accuracy = model.train_lstm(df,word_index,test_case_name,LSTM_COUNT)
 LSTM_Model.save(os.path.join(MODEL_FOLDER,test_case_name+'_LSTM.h5'))
 lstm_dataframe = pd.DataFrame(LSTM_Model_History.history)
 lstm_dataframe.to_csv(os.path.join(MODEL_FOLDER,test_case_name+'_LSTM.csv'))
 
 
-HAN3_MODEL_History,HAN3_MODEL,HAN3_accuracy = model.train_han_3(df,word_index,test_case_name)
+HAN3_MODEL_History,HAN3_MODEL,HAN3_accuracy = model.train_han_3(df,word_index,test_case_name,LSTM_COUNT,DROPOUT_VALUE,REGULARIZER,REG_VALUE)
 han3_dataframe = pd.DataFrame(HAN3_MODEL_History.history)
 HAN3_MODEL.save(os.path.join(MODEL_FOLDER,test_case_name+'_HAN3.h5'))
 han3_dataframe.to_csv(os.path.join(MODEL_FOLDER,test_case_name+'_HAN3.csv'))
