@@ -10,7 +10,7 @@ from keras.layers import Embedding, Input, Dense, LSTM, GRU, Bidirectional, Time
 from keras.layers.core import Reshape
 from keras import backend as K
 from keras import optimizers
-from keras.models import Model,load_model
+from keras.models import Model,load_model,model_from_json
 import nltk
 import re
 import matplotlib.pyplot as plt
@@ -38,6 +38,51 @@ models_for_cases = [
     'Test-cases/Case-4/'
 ]
 
+case_models = {
+    1 : {
+        'han': {
+            'json':'Test-cases/Case-11/models/HAN.json',
+            'h5':'Test-cases/Case-11/models/HAN.h5'
+        },
+        'lstm': {
+            'json':'Test-cases/Case-11/models/LSTM.json',
+            'h5':'Test-cases/Case-11/models/LSTM.h5'
+        },
+        'han3': {
+            'json':'Test-cases/Case-11/models/HAN3.json',
+            'h5':'Test-cases/Case-11/models/HAN3.h5'
+        }
+    },
+    2 : {
+        'han': {
+            'json':'Test-cases/Case-11/models/HAN.json',
+            'h5':'Test-cases/Case-11/models/HAN.h5'
+        },
+        'lstm': {
+            'json':'Test-cases/Case-11/models/LSTM.json',
+            'h5':'Test-cases/Case-11/models/LSTM.h5'
+        },
+        'han3': {
+            'json':'Test-cases/Case-11/models/HAN3.json',
+            'h5':'Test-cases/Case-11/models/HAN3.h5'
+        }
+    },
+    3 : {
+        'han': {
+            'json':'Test-cases/Case-11/models/HAN.json',
+            'h5':'Test-cases/Case-11/models/HAN.h5'
+        },
+        'lstm': {
+            'json':'Test-cases/Case-11/models/LSTM.json',
+            'h5':'Test-cases/Case-11/models/LSTM.h5'
+        },
+        'han3': {
+            'json':'Test-cases/Case-11/models/HAN3.json',
+            'h5':'Test-cases/Case-11/models/HAN3.h5'
+        }
+    }
+}
+
 MAX_SEQUENCE_LENGTH = 1000
 max_features=200000
 max_senten_len=40
@@ -59,6 +104,9 @@ def log(statement):
     print("+"*30)
     print(statement)
     print("+"*30)
+
+def print_seperation():
+    print("=============================================================================================")
 
 class AttentionWithContext(Layer):
     def __init__(self,
@@ -308,14 +356,30 @@ possible_models = ['han','rnn','han3']
 
 han_test_vectors,han3_test_vectors,rnn_test_vectors = generate_test_data()
 
-def predict_from_case(case_path):
-    available_models = glob.glob(case_path+'models/*.h5')
-    for model_path in available_models:
-        model_name = model_path.split('/')[-1].split('.')[0]
-        load_model = None
-        print(model_path)
-        if 'han' in model_name.lower():
-            loaded_model = load_model(model_path)
+def predict_for_case(json_path,h5_path,model_name):
+    j_file = open(json_path, 'r')
+    loaded_json_model = j_file.read()
+    j_file.close()
+    loaded_model = model_from_json(loaded_json_model,custom_objects={'AttentionWithContext':AttentionWithContext})
+    # predict_from_case(models_for_cases[0])
+    loaded_model.load_weights(h5_path)
+    loaded_model.summary()
+    test_vectors = None
+    if model_name  == 'han':
+        test_vectors = han_test_vectors
+    elif model_name  == 'lstm':
+        test_vectors = rnn_test_vectors
+    elif model_name  == 'han3':
+        test_vectors = han3_test_vectors
+    test_set_accuracy,test_df = get_testset_accuracy(loaded_model,test_vectors,test_vectors[1].columns.values)
+    log("Accuracy Distribution Over the Labels.")
+    log(test_df)
+    log("Test Accuracy : "+str(test_set_accuracy))
 
 
-predict_from_case(models_for_cases[0])
+for case_id in case_models:
+    for model_name in case_models[case_id]:
+        print_seperation()
+        log("Running "+ model_name+" Test Case "+str(case_id))
+        predict_for_case(case_models[case_id][model_name]['json'],case_models[case_id][model_name]['h5'],model_name)
+

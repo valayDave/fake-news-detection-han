@@ -6,3 +6,4 @@ matplotlib
 sklearn
 pydot
 seaborn
+pickle
