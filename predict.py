@@ -32,7 +32,7 @@ with open('training-data/'+dataset_name+'-tokenizer.pickle', 'rb') as handle: #L
 
 final_dataframe = pd.read_csv(dataset_path)
 models_for_cases = [
-    'Test-cases/Case-1/',
+    'Test-cases/Case-11/',
     'Test-cases/Case-2/',
     'Test-cases/Case-3/',
     'Test-cases/Case-4/'
@@ -315,7 +315,7 @@ def predict_from_case(case_path):
         load_model = None
         print(model_path)
         if 'han' in model_name.lower():
-            loaded_model = load_model(model_path,custom_objects={'AttentionWithContext':AttentionWithContext})
+            loaded_model = load_model(model_path)
 
 
 predict_from_case(models_for_cases[0])
