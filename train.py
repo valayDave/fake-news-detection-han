@@ -486,7 +486,7 @@ def train_han(data_frame,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REGULARIZER_VALU
     sent_encoder = TimeDistributed(wordEncoder)(sent_input)
     sent_lstm = Bidirectional(LSTM(LSTM_COUNT, return_sequences=True, kernel_regularizer=regularization_parameter))(sent_encoder)
     sent_dense = TimeDistributed(Dense(200, kernel_regularizer=regularization_parameter))(sent_lstm)
-    sent_att = Dropout(DROPOUT_VALUE)(AttentionWithContext()(sent_dense))
+    sent_att = Dropout(NEW_DROPOUT_VALUE)(AttentionWithContext()(sent_dense))
     preds = Dense(num_labels, activation='softmax')(sent_att)
     model = Model(sent_input, preds)
     model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['categorical_accuracy'])
