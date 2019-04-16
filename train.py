@@ -73,7 +73,7 @@ def clean_str(string):
     """
     Tokenization/string cleaning for dataset
     Every dataset is lower cased except
-    """f
+    """
     string = re.sub(r"\\", "", string)    
     string = re.sub(r"\'", "", string)    
     string = re.sub(r"\"", "", string)    
@@ -542,6 +542,9 @@ def train_han(data_frame,word_index,plot_name,LSTM_COUNT,NEW_DROPOUT_VALUE,REGUL
         weights = layer.get_weights()
         log("LAYER")
         print(weights)
+
+    log("Saving Model")
+    model.save('HAN.h5')
 
     #Get Accuracy Basis Test Set
     test_set_accuracy,label_prediction_df = get_testset_accuracy(model,test_vectors,seperated_labels.columns.values)
