@@ -53,3 +53,8 @@
 ## Inference
 
 The 3 LSTM is overfit, But even with regularization and drop out the overfitting doesn't seem to go. The LSTM's predictions are also less accurate than the HAN
+
+## Authors 
+
+- [Valay Dave](valaygaurang@gmail.com)
+- [Craig Ignatowski](cignatow@asu.edu)
