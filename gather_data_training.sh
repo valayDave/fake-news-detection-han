@@ -15,6 +15,3 @@ echo "Creating Training Data Folder And Downloading Tokenizer to the Folders"
 mkdir training-data
 perl gdown.pl https://drive.google.com/file/d/1x8hQlHpbcUk40T7zZenlHzSLX0OLxozU/view?usp=sharing training-data/split-1-tokenizer.pickle
 perl gdown.pl https://drive.google.com/file/d/1dwlHw4v2dzHjirx9368AGxKxPnMm3JqX/view?usp=sharing training-data/split-3-tokenizer.pickle
-
-echo "Downloading the TRAINING SESSION VIDEO : "
-perl gdown.pl https://drive.google.com/file/d/1oIEuDEEgZOmZkyziOgnaSJ5IueOTzrJa/view?usp=sharing training.mp4
