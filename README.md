@@ -1,5 +1,8 @@
 # FAKE NEWS DETECTION USING HIERARCHICAL ATTENTION NETWORKS
 
+Implementation of document classification model described in Hierarchical Attention Networks for Document Classification (Yang et al., 2016) for Fake News Detection. 
+
+
 ## Data setup
 
 - run ```./gather_data_training.sh``` to get Embedding Vectors, Training Data Files and the Tokenized Word Index
