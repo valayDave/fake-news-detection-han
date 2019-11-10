@@ -2,6 +2,13 @@
 
 Implementation of document classification model described in Hierarchical Attention Networks for Document Classification (Yang et al., 2016) for Fake News Detection. 
 
+## Neural Networks 
+
+- There are three networks which the current script trains : 
+    - LSTM 
+    - Hierarchical Attention Networks(HAN) with Tokenized Sentences and Words for attention context. 
+    - HAN with Headline tokenized vector as another layer of for additional attention context. 
+
 
 ## Data setup
 
